@@ -123,6 +123,12 @@ public class PictureQueryDto extends PageRequest implements Serializable {
     private Date endEditTime;
 
 
+    /**
+     * 是否为首页
+     */
+    private String homeShow;
+
+
 
     private static final long serialVersionUID = 1L;  
 }

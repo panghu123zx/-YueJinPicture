@@ -11,6 +11,7 @@ import com.ph.phpictureback.api.aliyun.AliyunApi;
 import com.ph.phpictureback.api.aliyun.model.CreateOutPaintingTaskDto;
 import com.ph.phpictureback.api.aliyun.model.CreateOutPaintingTaskVo;
 import com.ph.phpictureback.common.DeleteRequest;
+import com.ph.phpictureback.constant.RedisCacheConstant;
 import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
@@ -41,6 +42,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,6 +96,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private TransactionTemplate transactionTemplate;
+
+    @Resource
+    private RedisTemplate redisTemplate;
 
     /**
      * 上传图片
@@ -257,6 +263,27 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 user = userIdListMap.get(userId).get(0);
             }
             pictureVO.setUser(userService.getUserVo(user));
+
+
+            HashOperations ops = redisTemplate.opsForHash();
+            if(ops.hasKey(RedisCacheConstant.PICTURE_VIEW, pictureVO.getId())){
+                Object viewSum = ops.get(RedisCacheConstant.PICTURE_VIEW, pictureVO.getId());
+                long viewCount = ((Number) viewSum).longValue();
+                pictureVO.setViewCount(pictureVO.getViewCount() + viewCount);
+            }
+
+            if(ops.hasKey(RedisCacheConstant.PICTURE_LIKE, pictureVO.getId())){
+                Object likeSum = ops.get(RedisCacheConstant.PICTURE_LIKE, pictureVO.getId());
+                long likeCount = ((Number) likeSum).longValue();
+                pictureVO.setLikeCount(pictureVO.getLikeCount() + likeCount);
+            }
+
+            if(ops.hasKey(RedisCacheConstant.PICTURE_SHARE, pictureVO.getId())){
+                Object shareSum = ops.get(RedisCacheConstant.PICTURE_SHARE, pictureVO.getId());
+                long shareCount = ((Number) shareSum).longValue();
+                pictureVO.setShareCount(pictureVO.getShareCount() + shareCount);
+            }
+
         });
         pictureVOPage.setRecords(pictureVOList);
         return pictureVOPage;
@@ -296,6 +323,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         String sortOrder = pictureQueryDto.getSortOrder();
         Date startEditTime = pictureQueryDto.getStartEditTime();
         Date endEditTime = pictureQueryDto.getEndEditTime();
+        String homeShow = pictureQueryDto.getHomeShow();
 
         QueryWrapper<Picture> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
@@ -328,9 +356,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 queryWrapper.like("tags", "\"" + tag + "\"");
             }
         }
-
-        queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
-
+        if(StrUtil.isEmpty(homeShow)){
+            queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
+        }else{
+            queryWrapper.orderBy(StrUtil.isNotEmpty(homeShow), sortOrder.equals("ascend"), "viewCount");
+            queryWrapper.orderBy(StrUtil.isNotEmpty(homeShow), sortOrder.equals("ascend"), "likeCount");
+            queryWrapper.orderBy(StrUtil.isNotEmpty(homeShow), sortOrder.equals("ascend"),"createTime");
+        }
         return queryWrapper;
     }
 

@@ -21,6 +21,7 @@ import com.ph.phpictureback.constant.UserConstant;
 import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
+import com.ph.phpictureback.manager.LimitManager;
 import com.ph.phpictureback.manager.auth.StpKit;
 import com.ph.phpictureback.manager.auth.annotation.SaSpaceCheckPermission;
 import com.ph.phpictureback.manager.auth.model.SpaceUserPermissionConstant;
@@ -58,6 +59,9 @@ public class PictureController {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private LimitManager limitManager;
 
     @Resource
     private AliyunApi aliyunApi;
@@ -195,6 +199,7 @@ public class PictureController {
         Page<PictureVO> pageVoList = pictureService.listPictureVo(page, request);
         return ResultUtils.success(pageVoList);
     }
+
 
 
     /**
@@ -366,6 +371,8 @@ public class PictureController {
     public BaseResponse<Integer> uploadPictureByBatch(@RequestBody PictureUploadByBatchDto pictureUploadByBatchDto, HttpServletRequest request) {
         ThrowUtils.throwIf(pictureUploadByBatchDto == null, ErrorCode.PARAMS_ERROR, "获取图片条件为空");
         User loginUser = userService.getLoginUser(request);
+        //限流
+        limitManager.RateLimit(loginUser.getId().toString());
         Integer count = pictureService.uploadPictureByBatch(pictureUploadByBatchDto, loginUser);
         return ResultUtils.success(count);
     }
@@ -384,6 +391,8 @@ public class PictureController {
         ThrowUtils.throwIf(searchPictureByPictureDto == null, ErrorCode.PARAMS_ERROR, "获取图片条件为空");
         Long pictureId = searchPictureByPictureDto.getPictureId();
         ThrowUtils.throwIf(pictureId == null || pictureId < 0, ErrorCode.PARAMS_ERROR, "图片id为空");
+        //限流
+        limitManager.RateLimit(pictureId.toString());
         Picture picture = pictureService.getById(pictureId);
         ThrowUtils.throwIf(picture == null, ErrorCode.PARAMS_ERROR, "图片不存在");
         List<ImageSearchDto> imageSearchList = imageSearchFacade.getImageSearchList(picture.getUrl());
@@ -440,7 +449,8 @@ public class PictureController {
                                                                        HttpServletRequest request) {
         ThrowUtils.throwIf(createPictureOutPaintingTaskDto == null, ErrorCode.PARAMS_ERROR, "获取图片条件为空");
         User loginUser = userService.getLoginUser(request);
-        ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
+        //限流
+        limitManager.RateLimit(loginUser.getId().toString());
         CreateOutPaintingTaskVo createOutPaintingTaskVo = pictureService.createTask(createPictureOutPaintingTaskDto, loginUser);
         return ResultUtils.success(createOutPaintingTaskVo);
     }

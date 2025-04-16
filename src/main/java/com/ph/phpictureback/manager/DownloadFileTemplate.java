@@ -75,10 +75,10 @@ public abstract class DownloadFileTemplate {
                 }
 
                 //返回转化webp图的信息
-                return getUploadPictureDto(uploadFileName, webpCiObject, thumbnailUrlCiObject, imageInfo);
+                return getUploadPictureDto(filename, webpCiObject, thumbnailUrlCiObject, imageInfo);
             }
             //返回 原图信息
-            return getUploadPictureDto(uploadPath, file, uploadFileName, imageInfo);
+            return getUploadPictureDto(uploadPath, file, filename, imageInfo);
 
         } catch (IOException e) {
             log.error("upload picture error");
@@ -92,18 +92,18 @@ public abstract class DownloadFileTemplate {
     /**
      * 格式转化为webp的方法
      *
-     * @param uploadFileName
+     * @param filename
      * @param webpCiObject
      * @return
      */
-    private UploadPictureDto getUploadPictureDto(String uploadFileName, CIObject webpCiObject, CIObject thumbnailUrlCiObject, ImageInfo imageInfo) {
+    private UploadPictureDto getUploadPictureDto(String filename, CIObject webpCiObject, CIObject thumbnailUrlCiObject, ImageInfo imageInfo) {
         int width = webpCiObject.getWidth();
         int height = webpCiObject.getHeight();
         double scale = NumberUtil.round(width * 1.0 / height, 2).doubleValue();
 
         //设置图片的基本信息
         UploadPictureDto uploadPicture = new UploadPictureDto();
-        uploadPicture.setPicName(uploadFileName);
+        uploadPicture.setPicName(FileUtil.mainName(filename));
         uploadPicture.setPicSize(webpCiObject.getSize().longValue());
         uploadPicture.setPicWidth(width);
         uploadPicture.setPicHeight(height);
@@ -160,11 +160,11 @@ public abstract class DownloadFileTemplate {
      *
      * @param uploadPath
      * @param file
-     * @param uploadFileName
+     * @param filename
      * @param imageInfo
      * @return
      */
-    private UploadPictureDto getUploadPictureDto(String uploadPath, File file, String uploadFileName, ImageInfo imageInfo) {
+    private UploadPictureDto getUploadPictureDto(String uploadPath, File file, String filename, ImageInfo imageInfo) {
 
         int width = imageInfo.getWidth();
         int height = imageInfo.getHeight();
@@ -173,7 +173,7 @@ public abstract class DownloadFileTemplate {
         //设置图片的基本信息
         UploadPictureDto uploadPicture = new UploadPictureDto();
         uploadPicture.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
-        uploadPicture.setPicName(uploadFileName);
+        uploadPicture.setPicName(FileUtil.mainName(filename));
         uploadPicture.setPicSize(FileUtil.size(file));
         uploadPicture.setPicWidth(width);
         uploadPicture.setPicHeight(height);

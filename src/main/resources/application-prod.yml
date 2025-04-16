@@ -1,0 +1,31 @@
+server:
+  port: 8123
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ph_picture
+    username: ph_picture_root
+    password: panghu
+
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    timeout: 5000
+    password: panghu
+
+
+mybatis-plus:
+  configuration:
+    #    仅在开发环境中使用
+    log-impl: ''
+
+# 接口文档配置
+knife4j:
+  basic:
+    enable: true
+    username: root
+    password: panghu
+
+
