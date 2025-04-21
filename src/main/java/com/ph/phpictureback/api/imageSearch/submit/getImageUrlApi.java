@@ -75,9 +75,4 @@ public class getImageUrlApi {
     }
 
 
-    public static void main(String[] args) {
-        String url = "https://www.codefather.cn/logo.png";
-        String imageUrl = getImageUrl(url);
-        System.out.println(imageUrl);
-    }
 }

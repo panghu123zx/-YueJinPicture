@@ -402,14 +402,18 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Picture picture = this.getById(pictureId);
         //检验图片权限
 //        pictureService.checkPictureAuth(picture, loginUser);
+
         //更新空间大小
         transactionTemplate.execute(status -> {
-            boolean update = spaceService.lambdaUpdate()
-                    .eq(Space::getId, picture.getSpaceId())
-                    .setSql("totalSize = totalSize - " + picture.getPicSize())
-                    .setSql("totalCount=totalCount-1")
-                    .update();
-            ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "更新空间大小失败");
+            if(picture.getSpaceId()!=null){
+                boolean update = spaceService.lambdaUpdate()
+                        .eq(Space::getId, picture.getSpaceId())
+                        .setSql("totalSize = totalSize - " + picture.getPicSize())
+                        .setSql("totalCount=totalCount-1")
+                        .update();
+                ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "更新空间大小失败");
+            }
+
 
             boolean delete = this.removeById(pictureId);
 

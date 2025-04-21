@@ -50,9 +50,4 @@ public class getImageFirstUrlApi {
     }
 
 
-    public static void main(String[] args) {
-        String url = "https://graph.baidu.com/s?card_key=&entrance=GENERAL&extUiData[isLogoShow]=1&f=all&isLogoShow=1&session_id=17807770648778027261&sign=1215fe97cd54acd88139901742483715&tpl_from=pc";
-        String imageFirstUrl = getImageFirstUrl(url);
-        System.out.println(imageFirstUrl);
-    }
 }

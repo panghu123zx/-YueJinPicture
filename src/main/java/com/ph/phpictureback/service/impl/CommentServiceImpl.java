@@ -39,6 +39,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
     @Resource
     private PictureService pictureService;
 
+    @Resource
+    private UserService userService;
+
     /**
      * 根据题目id获取到所有的评论
      *
@@ -92,6 +95,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
         Long id = deleteRequest.getId();
         Comment commentById = this.getById(id);
         ThrowUtils.throwIf(commentById==null,ErrorCode.PARAMS_ERROR,"评论不存在");
+        if(!commentById.getUserId().equals(loginUser.getId()) || !userService.isAdmin(loginUser)){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "没有权限删除");
+        }
+
+
         Picture picture = pictureService.getById(commentById.getTargetId());
         ThrowUtils.throwIf(picture==null,ErrorCode.PARAMS_ERROR,"图片不存在");
         comment.setId(id);
@@ -128,7 +136,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
      */
     @Override
     public boolean addComment(AddCommentDto addCommentDto,User loginUser) {
-        if(StrUtil.isBlank(addCommentDto.getContent())){
+        if(StrUtil.isBlank(addCommentDto.getContent()) || addCommentDto.getContent().equals("评论已被删除")){
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "评论内容不能为空");
         }
 

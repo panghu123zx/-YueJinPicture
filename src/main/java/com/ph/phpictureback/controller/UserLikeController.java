@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.common.BaseResponse;
 import com.ph.phpictureback.common.PageRequest;
 import com.ph.phpictureback.common.ResultUtils;
+import com.ph.phpictureback.constant.UserConstant;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.model.dto.userlike.UserLikeAddDto;
@@ -46,9 +47,14 @@ public class UserLikeController {
      */
     @GetMapping("/getMyLike")
     public BaseResponse<UserLikeVO> getMyLike(HttpServletRequest request) {
-        User loginUser = userService.getLoginUser(request);
-        UserLikeVO userLikeVO = userLikeService.getMyLike(loginUser);
-        return ResultUtils.success(userLikeVO);
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN);
+        User loginUser = (User) userObj;
+        if (loginUser == null || loginUser.getId() == null) {
+            return ResultUtils.success(null);
+        }else{
+            UserLikeVO userLikeVO = userLikeService.getMyLike(loginUser);
+            return ResultUtils.success(userLikeVO);
+        }
     }
 
     /**

@@ -4,12 +4,12 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/ph_picture
+    url: jdbc:mysql://114.55.73.240:3306/ph_picture
     username: ph_picture_root
     password: panghu
 
   redis:
-    host: localhost
+    host: 114.55.73.240
     port: 6379
     database: 0
     timeout: 5000

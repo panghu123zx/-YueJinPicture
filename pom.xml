@@ -187,7 +187,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.ph.phpictureback.PhPictureBackApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

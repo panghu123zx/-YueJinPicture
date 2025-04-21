@@ -63,13 +63,5 @@ public class getImageListApi {
         return JSONUtil.toList(list,ImageSearchDto.class);
     }
 
-    public static void main(String[] args) {
-        String url="https://graph.baidu.com/ajax/pcsimi?carousel=503&entrance=GENERAL&extUiData%5BisLogoShow%5D=1&" +
-                "inspire=general_pc&limit=30&next=2&render_type=card&session_id=17807770648778027261&s" +
-                "ign=1215fe97cd54acd88139901742483715&tk=1ba68&tpl_from=pc";
-        List<ImageSearchDto> imageList = getImageList(url);
-        System.out.println(imageList);
-    }
-
 
 }
