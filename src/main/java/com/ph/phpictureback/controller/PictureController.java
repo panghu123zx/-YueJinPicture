@@ -44,9 +44,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 健康检查
- */
 @RestController
 @RequestMapping("/picture")
 public class PictureController {
@@ -409,7 +406,8 @@ public class PictureController {
      */
     @PostMapping("/search/color")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
-    public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorDto searchPictureByColorDto, HttpServletRequest request) {
+    public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorDto searchPictureByColorDto,
+                                                              HttpServletRequest request) {
         ThrowUtils.throwIf(searchPictureByColorDto == null, ErrorCode.PARAMS_ERROR, "获取图片条件为空");
         Long spaceId = searchPictureByColorDto.getSpaceId();
         String color = searchPictureByColorDto.getPicColor();

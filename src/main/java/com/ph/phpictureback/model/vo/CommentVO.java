@@ -34,15 +34,7 @@ public class CommentVO implements Serializable {
      */
     private Long userId;
 
-    /**
-     * 用户昵称
-     */
-    private String userName;
 
-    /**
-     * 用户头像
-     */
-    private String userAvatar;
 
     /**
      * 评论内容
@@ -66,11 +58,6 @@ public class CommentVO implements Serializable {
     private Long fromId;
 
     /**
-     * 回复人名称
-     */
-    private String fromName;
-
-    /**
      * 创建时间
      */
     private Date createTime;
@@ -79,6 +66,11 @@ public class CommentVO implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+
+    /**
+     * 当前用户的信息
+     */
+    private UserVO userVO;
 
     /**
      * 评论的子级评论

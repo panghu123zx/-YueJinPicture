@@ -8,6 +8,8 @@ server:
         max-age: 2592000
 
 spring:
+  profiles:
+    active: local
   application:
     name: ph-picture-back
     #指定上传体积

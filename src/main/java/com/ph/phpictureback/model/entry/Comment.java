@@ -34,15 +34,6 @@ public class Comment implements Serializable {
      */
     private Long userId;
 
-    /**
-     * 用户昵称
-     */
-    private String userName;
-
-    /**
-     * 用户头像
-     */
-    private String userAvatar;
 
     /**
      * 评论内容
@@ -64,10 +55,7 @@ public class Comment implements Serializable {
      */
     private Long fromId;
 
-    /**
-     * 回复人名称
-     */
-    private String fromName;
+
 
     /**
      * 创建时间

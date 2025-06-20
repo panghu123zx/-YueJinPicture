@@ -14,6 +14,7 @@ import com.ph.phpictureback.model.entry.Comment;
 import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.vo.CommentVO;
+import com.ph.phpictureback.model.vo.UserVO;
 import com.ph.phpictureback.service.CommentService;
 import com.ph.phpictureback.mapper.CommentMapper;
 import com.ph.phpictureback.service.PictureService;
@@ -63,6 +64,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
         //转化为vo类型
         for (Comment comment : commentList) {
             CommentVO commentVO = CommentVO.objToVo(comment);
+            //当前评论的user
+            User user = userService.getById(comment.getUserId());
+            UserVO userVO = UserVO.objToVo(user);
+            commentVO.setUserVO(userVO);
             commentVoList.add(commentVO);
         }
         //根据父级评论查询子级评论
@@ -74,6 +79,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
             List<CommentVO> commentVOChildList = new ArrayList<>();
             for (Comment comment : commentListChild) {
                 CommentVO commentVOChild = CommentVO.objToVo(comment);
+                //子级评论的user
+                User user = userService.getById(comment.getUserId());
+                UserVO userVO = UserVO.objToVo(user);
+                commentVOChild.setUserVO(userVO);
                 commentVOChildList.add(commentVOChild);
             }
             //将子级的评论放进去
@@ -143,8 +152,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
         Comment comment = new Comment();
         BeanUtils.copyProperties(addCommentDto, comment);
         comment.setUserId(loginUser.getId());
-        comment.setUserName(loginUser.getUserName());
-        comment.setUserAvatar(loginUser.getUserAvatar());
         //直接进行添加操作
         boolean save = this.save(comment);
         if (!save) {

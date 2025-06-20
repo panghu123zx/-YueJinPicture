@@ -28,10 +28,6 @@ public class AddCommentDto implements Serializable {
      * 评论内容
      */
     private String content;
-    /**
-     * 回复人名称
-     */
-    private String fromName;
 
     /**
      * 回复人id

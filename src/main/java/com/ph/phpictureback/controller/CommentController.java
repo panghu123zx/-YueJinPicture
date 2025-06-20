@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 健康检查
+ * 评论功能
  */
 @RestController
 @RequestMapping("/comment")

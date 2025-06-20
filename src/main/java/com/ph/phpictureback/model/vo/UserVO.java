@@ -1,6 +1,8 @@
 package com.ph.phpictureback.model.vo;
 
+import com.ph.phpictureback.model.entry.User;
 import lombok.Data;
+import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -45,6 +47,37 @@ public class UserVO implements Serializable {
      * 创建时间
      */
     private Date createTime;
+
+    /**
+     * 包装类转对象
+     *
+     * @param userVo
+     * @return
+     */
+    public static User voToObj(UserVO userVo) {
+        if (userVo == null) {
+            return null;
+        }
+        User user = new User();
+        BeanUtils.copyProperties(userVo, user);
+
+        return user;
+    }
+
+    /**
+     * 对象转包装类
+     *
+     * @param user
+     * @return
+     */
+    public static UserVO objToVo(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
+    }
 
     private static final long serialVersionUID = 1L;
 }
