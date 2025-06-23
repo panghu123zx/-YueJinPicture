@@ -2,28 +2,28 @@ package com.ph.phpictureback.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ph.phpictureback.common.DeleteRequest;
 import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
+import com.ph.phpictureback.mapper.CommentMapper;
 import com.ph.phpictureback.model.dto.comment.AddCommentDto;
 import com.ph.phpictureback.model.dto.comment.CommentQueryDto;
 import com.ph.phpictureback.model.entry.Comment;
+import com.ph.phpictureback.model.entry.Forum;
 import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.vo.CommentVO;
 import com.ph.phpictureback.model.vo.UserVO;
 import com.ph.phpictureback.service.CommentService;
-import com.ph.phpictureback.mapper.CommentMapper;
+import com.ph.phpictureback.service.ForumService;
 import com.ph.phpictureback.service.PictureService;
 import com.ph.phpictureback.service.UserService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +42,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ForumService forumService;
 
     /**
      * 根据题目id获取到所有的评论
@@ -103,14 +106,25 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
         Comment comment = new Comment();
         Long id = deleteRequest.getId();
         Comment commentById = this.getById(id);
-        ThrowUtils.throwIf(commentById==null,ErrorCode.PARAMS_ERROR,"评论不存在");
-        if(!commentById.getUserId().equals(loginUser.getId()) || !userService.isAdmin(loginUser)){
+        ThrowUtils.throwIf(commentById == null, ErrorCode.PARAMS_ERROR, "评论不存在");
+        if (!commentById.getUserId().equals(loginUser.getId()) || !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "没有权限删除");
         }
-
-
-        Picture picture = pictureService.getById(commentById.getTargetId());
-        ThrowUtils.throwIf(picture==null,ErrorCode.PARAMS_ERROR,"图片不存在");
+        Picture picture = null;
+        Forum forum = null;
+        Integer targetType = commentById.getTargetType();
+        switch (targetType) {
+            case 0:
+                picture = pictureService.getById(commentById.getTargetId());
+                ThrowUtils.throwIf(picture == null, ErrorCode.PARAMS_ERROR, "图片不存在");
+                break;
+            case 1:
+                forum = forumService.getById(commentById.getTargetId());
+                ThrowUtils.throwIf(forum == null, ErrorCode.PARAMS_ERROR, "帖子不存在");
+                break;
+            default:
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "评论类型错误");
+        }
         comment.setId(id);
         //如果没有子级评论就直接删除
         QueryWrapper<Comment> qw = new QueryWrapper<>();
@@ -130,8 +144,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除失败");
             }
         }
-
-        updateCommentCountDelete(picture);
+        if(targetType==0){
+            updateCommentCountDelete(picture);
+        }else{
+            updateCommentCountDeleteByForum(forum);
+        }
 
         return true;
     }
@@ -144,8 +161,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
      * @return
      */
     @Override
-    public boolean addComment(AddCommentDto addCommentDto,User loginUser) {
-        if(StrUtil.isBlank(addCommentDto.getContent()) || addCommentDto.getContent().equals("评论已被删除")){
+    public boolean addComment(AddCommentDto addCommentDto, User loginUser) {
+        if (StrUtil.isBlank(addCommentDto.getContent()) || addCommentDto.getContent().equals("评论已被删除")) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "评论内容不能为空");
         }
 
@@ -167,6 +184,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
                 updateCommentCount(picture);
                 break;
             case 1:
+                Forum forum = forumService.getById(targetId);
+                updateCommentCountByForum(forum);
                 break;
             default:
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "评论类型错误");
@@ -191,12 +210,39 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
         }
     }
 
-
     public void updateCommentCountDelete(Picture picture) {
         //更新评论数
         if (picture != null) {
             boolean update = pictureService.lambdaUpdate()
                     .eq(Picture::getId, picture.getId())
+                    .setSql("commentCount = commentCount - 1")
+                    .update();
+            ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "更新评论数失败");
+        }
+    }
+
+
+    /**
+     * 更新帖子评论数
+     *
+     * @param forum
+     */
+    public void updateCommentCountByForum(Forum forum) {
+        //更新评论数
+        if (forum != null) {
+            boolean update = forumService.lambdaUpdate()
+                    .eq(Forum::getId, forum.getId())
+                    .setSql("commentCount = commentCount + 1")
+                    .update();
+            ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "更新评论数失败");
+        }
+    }
+
+    public void updateCommentCountDeleteByForum(Forum forum) {
+        //更新评论数
+        if (forum != null) {
+            boolean update = forumService.lambdaUpdate()
+                    .eq(Forum::getId, forum.getId())
                     .setSql("commentCount = commentCount - 1")
                     .update();
             ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "更新评论数失败");

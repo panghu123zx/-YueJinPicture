@@ -29,7 +29,7 @@ create table if not exists picture
     name         varchar(128)                       not null comment '图片名称',
     introduction varchar(512)                       null comment '简介',
     category     varchar(64)                        null comment '分类',
-    tags         varchar(512)                      null comment '标签（JSON 数组）',
+    tags         varchar(512)                       null comment '标签（JSON 数组）',
     picSize      bigint                             null comment '图片体积',
     picWidth     int                                null comment '图片宽度',
     picHeight    int                                null comment '图片高度',
@@ -47,18 +47,20 @@ create table if not exists picture
     INDEX idx_userId (userId)              -- 提升基于用户 ID 的查询性能
 ) comment '图片' collate = utf8mb4_unicode_ci;
 
-alter table picture add column spaceId bigint null comment '空间 id';
+alter table picture
+    add column spaceId bigint null comment '空间 id';
 create index idx_spaceId on picture (spaceId);
 
-alter table picture add column thumbnailUrl varchar(512) null comment '缩略图 url';
+alter table picture
+    add column thumbnailUrl varchar(512) null comment '缩略图 url';
 
 
 ALTER TABLE picture
     -- 添加新列
-    ADD COLUMN reviewStatus INT DEFAULT 0 NOT NULL COMMENT '审核状态：0-待审核; 1-通过; 2-拒绝',
-    ADD COLUMN reviewMessage VARCHAR(512) NULL COMMENT '审核信息',
-    ADD COLUMN reviewerId BIGINT NULL COMMENT '审核人 ID',
-    ADD COLUMN reviewTime DATETIME NULL COMMENT '审核时间';
+    ADD COLUMN reviewStatus  INT DEFAULT 0 NOT NULL COMMENT '审核状态：0-待审核; 1-通过; 2-拒绝',
+    ADD COLUMN reviewMessage VARCHAR(512)  NULL COMMENT '审核信息',
+    ADD COLUMN reviewerId    BIGINT        NULL COMMENT '审核人 ID',
+    ADD COLUMN reviewTime    DATETIME      NULL COMMENT '审核时间';
 
 -- 创建基于 reviewStatus 列的索引
 CREATE INDEX idx_reviewStatus ON picture (reviewStatus);
@@ -68,12 +70,11 @@ ALTER TABLE picture
 
 ALTER TABLE picture
     ADD COLUMN commentCount bigint default 0 null comment '评论数',
-    ADD COLUMN likeCount bigint default 0 null comment '点赞数',
-    ADD COLUMN shareCount bigint default 0 null comment '分享数',
-    ADD COLUMN viewCount bigint default 0 null comment '浏览数';
+    ADD COLUMN likeCount    bigint default 0 null comment '点赞数',
+    ADD COLUMN shareCount   bigint default 0 null comment '分享数',
+    ADD COLUMN viewCount    bigint default 0 null comment '浏览数';
 CREATE INDEX idx_viewCount
     ON picture (viewCount);
-
 
 
 -- 空间表
@@ -105,13 +106,13 @@ ALTER TABLE space
 CREATE INDEX idx_spaceType ON space (spaceType);
 
 
-
+-- 评论表
 create table comment
 (
     id         bigint                                     not null comment '主键id'
         primary key,
-    targetId bigint           default 0                 not null comment '目标id',
-    targetType tinyint(1)   default 0 not null comment '目标的类型 0-图片 1-帖子',
+    targetId   bigint           default 0                 not null comment '目标id',
+    targetType tinyint(1)       default 0                 not null comment '目标的类型 0-图片 1-帖子',
     userId     bigint           default 0                 not null comment '用户id',
     userName   varchar(50)                                null comment '用户昵称',
     userAvatar varchar(255)                               null comment '用户头像',
@@ -133,24 +134,25 @@ create index idx_targetId
 create index idx_userId
     on comment (userId);
 
+-- 点赞表
 create table user_like
 (
     id         bigint auto_increment comment 'id' primary key,
-    targetType tinyint(1)   default 0 not null comment '目标的类型 0-图片 1-帖子',
-    userId     bigint                                 not null comment '用户 id',
-    userName   varchar(50)                                null comment '用户昵称',
-    userAvatar varchar(255)                               null comment '用户头像',
-    likePic text  null comment '我点赞的图片id的json数组',
-    likePost text null comment '我点赞的帖子id的json数组',
-    createTime datetime     default CURRENT_TIMESTAMP not null comment '创建时间'
+    targetType tinyint(1) default 0                 not null comment '目标的类型 0-图片 1-帖子',
+    userId     bigint                               not null comment '用户 id',
+    userName   varchar(50)                          null comment '用户昵称',
+    userAvatar varchar(255)                         null comment '用户头像',
+    likePic    text                                 null comment '我点赞的图片id的json数组',
+    likePost   text                                 null comment '我点赞的帖子id的json数组',
+    createTime datetime   default CURRENT_TIMESTAMP not null comment '创建时间'
 )
     comment '用户点赞表' collate = utf8mb4_unicode_ci;
-create index idx_userId on  user_like (userId);
+create index idx_userId on user_like (userId);
 
 alter table user_like
     add column likeShare tinyint(1) default 0 null comment '是否点赞分享 0-点赞 1-分享';
 
-
+-- 空间表
 create table space_user
 (
     id         bigint auto_increment comment 'id'
@@ -170,3 +172,29 @@ create index idx_spaceId
 
 create index idx_userId
     on space_user (userId);
+
+-- 论坛表（帖子表）
+create table forum
+(
+    id            bigint auto_increment comment 'id' primary key,
+    title         varchar(128)                       not null comment '标题',
+    content       text                               not null comment '内容',
+    userId        bigint                             not null comment '创建人',
+    category      varchar(64)                        not null comment '分类',
+    url           varchar(512)                       null comment '封面地址',
+    thumbnailUrl  varchar(512)                       null comment '封面缩略图',
+    likeCount     int      default 0                 null comment '点赞数',
+    viewCount     int      default 0                 null comment '浏览数',
+    shareCount    int      default 0                 null comment '分享数',
+    commentCount  int      default 0                 null comment '评论数',
+    reviewStatus  int      default 0                 not null comment '审核状态 0-待审核，1-通过，2-拒绝',
+    reviewMessage varchar(512)                       null comment '审核信息',
+    reviewerId    bigint                             null comment '审核人',
+    createTime    datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete      tinyint  default 0                 not null comment '是否删除'
+) comment '论坛表' collate = utf8mb4_unicode_ci;
+
+create index idx_title on forum (title);
+create index idx_category on forum (category);
+create index idx_userId on forum (userId);
