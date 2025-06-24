@@ -13,6 +13,7 @@ import com.ph.phpictureback.model.dto.userlike.UserLikeAddDto;
 import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.entry.UserLike;
+import com.ph.phpictureback.model.enums.ForumPictureTypeEnum;
 import com.ph.phpictureback.model.enums.UserLikeTypeEnum;
 import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.model.vo.UserLikeVO;
@@ -39,23 +40,6 @@ public class UserLikeController {
 
     @Resource
     private PictureService pictureService;
-
-    /**
-     * 获取我的点赞
-     * @param request
-     * @return
-     */
-    @GetMapping("/getMyLike")
-    public BaseResponse<UserLikeVO> getMyLike(HttpServletRequest request) {
-        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN);
-        User loginUser = (User) userObj;
-        if (loginUser == null || loginUser.getId() == null) {
-            return ResultUtils.success(null);
-        }else{
-            UserLikeVO userLikeVO = userLikeService.getMyLike(loginUser);
-            return ResultUtils.success(userLikeVO);
-        }
-    }
 
     /**
      * 点赞
@@ -99,6 +83,36 @@ public class UserLikeController {
         Boolean result = userLikeService.addUserShare(userLikeAddDto, loginUser);
         return ResultUtils.success(result);
     }
+
+    /**
+     * 获取我的点赞
+     * @param request
+     * @return
+     */
+    @PostMapping("/getMyLike")
+    public BaseResponse<UserLike> getMyLike(@RequestBody UserLikeAddDto userLikeAddDto,HttpServletRequest request) {
+        ThrowUtils.throwIf(userLikeAddDto == null, ErrorCode.PARAMS_ERROR, "参数不能为空");
+        Integer targetType = userLikeAddDto.getTargetType();
+        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
+        ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
+
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN);
+        User loginUser = (User) userObj;
+        if (loginUser == null || loginUser.getId() == null) {
+            return ResultUtils.success(null);
+        }else{
+            UserLike userLike = userLikeService.lambdaQuery()
+                    .eq(UserLike::getUserId, loginUser.getId())
+                    .eq(UserLike::getLikeShare, UserLikeTypeEnum.LIKE.getValue())
+                    .eq(UserLike::getTargetType, forumPictureTypeValue.getValue())
+                    .one();
+
+
+//            UserLikeVO userLikeVO = userLikeService.getMyLike(loginUser);
+            return ResultUtils.success(userLike);
+        }
+    }
+
     /**
      * 获取我的分享
      * @param request

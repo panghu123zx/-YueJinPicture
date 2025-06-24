@@ -16,7 +16,7 @@ public class UserLikeAddDto implements Serializable {
     private Long targetId;
 
     /**
-     * 点赞类型 0:图片 1:评论
+     * 点赞类型 0:图片 1:帖子
      */
     private Integer targetType;
 

@@ -1,7 +1,12 @@
 package com.ph.phpictureback.model.vo;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ph.phpictureback.model.entry.Forum;
+import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.entry.UserLike;
 import lombok.Data;
+import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -38,6 +43,7 @@ public class UserLikeVO implements Serializable {
      * 用户头像
      */
     private String userAvatar;
+
     /**
      * 是否点赞分享 0-点赞 1-分享
      */
@@ -46,7 +52,12 @@ public class UserLikeVO implements Serializable {
     /**
      * 我点赞的图片id的json数组
      */
-    private List<PictureVO> likePic;
+    private List<String> likePic;
+
+    /**
+     * 我点赞的图片id的json数组
+     */
+    private List<PictureVO> likePicVO;
 
     /**
      * 我点赞的帖子id的json数组
@@ -54,9 +65,47 @@ public class UserLikeVO implements Serializable {
     private List<String> likePost;
 
     /**
+     * 我分享/点赞的帖子 的数组
+     */
+    private List<ForumVO> likePostVO;
+
+    /**
      * 创建时间
      */
     private Date createTime;
+
+
+    /**
+     * 包装类转对象
+     *
+     * @param userLikeVO
+     * @return
+     */
+    public static UserLike voToObj(UserLikeVO userLikeVO) {
+        if (userLikeVO == null) {
+            return null;
+        }
+        UserLike userLike = new UserLike();
+        BeanUtils.copyProperties(userLikeVO, userLike);
+        //TODO
+        userLike.setLikePic(JSONUtil.toJsonStr(userLikeVO.getLikePic()));
+        return userLike;
+    }
+
+    /**
+     * 对象转包装类
+     *
+     * @param userLike
+     * @return
+     */
+    public static UserLikeVO objToVo(UserLike userLike) {
+        if (userLike == null) {
+            return null;
+        }
+        UserLikeVO userLikeVO = new UserLikeVO();
+        BeanUtils.copyProperties(userLike, userLikeVO);
+        return userLikeVO;
+    }
 
     private static final long serialVersionUID = 1L;
 }

@@ -1,10 +1,15 @@
 package com.ph.phpictureback.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.model.dto.forum.ForumAddDto;
+import com.ph.phpictureback.model.dto.forum.ForumQueryDto;
+import com.ph.phpictureback.model.dto.forum.ForumReviewDto;
 import com.ph.phpictureback.model.dto.forum.ForumUpdateDto;
 import com.ph.phpictureback.model.entry.Forum;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.vo.ForumVO;
 
 /**
 * @author 杨志亮
@@ -33,5 +38,24 @@ public interface ForumService extends IService<Forum> {
      * @param forumUpdateDto
      * @return
      */
-    boolean updateForum(ForumUpdateDto forumUpdateDto);
+    boolean updateForum(ForumUpdateDto forumUpdateDto,User loginUser);
+
+    QueryWrapper<Forum> getQueryWrapper(ForumQueryDto forumQueryDto);
+
+    Page<ForumVO> listForumVO(Page<Forum> page);
+
+    /**
+     * 获取帖子VO
+     * @param id
+     * @return
+     */
+    ForumVO getForumVO(Long id);
+
+    /**
+     * 审核帖子
+     * @param forumReviewDto
+     * @param loginUser
+     * @return
+     */
+    boolean reviewForum(ForumReviewDto forumReviewDto, User loginUser);
 }

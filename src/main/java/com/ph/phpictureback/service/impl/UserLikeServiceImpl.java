@@ -8,12 +8,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
+import com.ph.phpictureback.manager.redisCache.ForumCache;
 import com.ph.phpictureback.manager.redisCache.PictureLikeCache;
 import com.ph.phpictureback.manager.redisCache.PictureShareCache;
 import com.ph.phpictureback.model.dto.userlike.UserLikeAddDto;
 import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.entry.UserLike;
+import com.ph.phpictureback.model.enums.ForumPictureTypeEnum;
 import com.ph.phpictureback.model.enums.UserLikeTypeEnum;
 import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.model.vo.UserLikeVO;
@@ -48,6 +50,8 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
 
     @Resource
     private UserService userService;
+    @Resource
+    private ForumCache forumCache;
 
     /**
      * 点赞
@@ -62,7 +66,12 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         Integer targetType = userLikeAddDto.getTargetType();
         Integer likeShare = userLikeAddDto.getLikeShare();
         UserLikeTypeEnum userLikeTypeValue = UserLikeTypeEnum.getUserLikeTypeValue(likeShare);
-        ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.SHARE.getValue()), ErrorCode.PARAMS_ERROR, "点赞类型错误");
+        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
+        //如果是分享时就错误
+        ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.SHARE.getValue())
+                , ErrorCode.PARAMS_ERROR, "点赞类型错误");
+        //不是图片/帖子就报错
+        ThrowUtils.throwIf(forumPictureTypeValue==null ,ErrorCode.PARAMS_ERROR,"类型错误");
 
         UserLike addUserLike = new UserLike();
         UserLike userLike = this.lambdaQuery()
@@ -82,8 +91,13 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
             addUserLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
             boolean update = this.updateById(addUserLike);
             ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "点赞失败");
-            //添加用户点赞的缓存
-            pictureLikeCache.addPictureLikeCache(targetId);
+            //判断是图片还是帖子
+            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                //添加用户点赞的缓存
+                pictureLikeCache.addPictureLikeCache(targetId);
+            }else{
+                forumCache.addForumLikeCache(targetId);
+            }
             return true;
         } else {
             addUserLike.setTargetType(targetType);
@@ -95,8 +109,13 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
             addUserLike.setLikePic(JSONUtil.toJsonStr(picIdList));
             boolean save = this.save(addUserLike);
             ThrowUtils.throwIf(!save, ErrorCode.PARAMS_ERROR, "点赞失败");
-            //添加用户点赞的缓存
-            pictureLikeCache.addPictureLikeCache(targetId);
+            //判断是图片还是帖子
+            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                //添加用户点赞的缓存
+                pictureLikeCache.addPictureLikeCache(targetId);
+            }else{
+                forumCache.addForumLikeCache(targetId);
+            }
             return true;
         }
 
@@ -113,7 +132,11 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         Integer targetType = userLikeAddDto.getTargetType();
         Integer likeShare = userLikeAddDto.getLikeShare();
         UserLikeTypeEnum userLikeTypeValue = UserLikeTypeEnum.getUserLikeTypeValue(likeShare);
+        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
+        //取消的要是图片的点赞
         ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.SHARE.getValue()), ErrorCode.PARAMS_ERROR, "点赞类型错误");
+        //点赞的要求是图片和帖子
+        ThrowUtils.throwIf(forumPictureTypeValue==null ,ErrorCode.PARAMS_ERROR,"类型错误");
 
         UserLike userLike = this.lambdaQuery()
                 .eq(UserLike::getUserId, loginUser.getId())
@@ -128,8 +151,12 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         userLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
         boolean update = this.updateById(userLike);
         ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "取消点赞失败");
-        //添加用户点赞的缓存
-        pictureLikeCache.deletePictureLikeCache(targetId);
+        if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+            //添加取消点赞的缓存
+            pictureLikeCache.deletePictureLikeCache(targetId);
+        }else{
+            forumCache.deleteForumLikeCache(targetId);
+        }
         return true;
     }
 
@@ -197,7 +224,9 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         Integer targetType = userLikeAddDto.getTargetType();
         Integer likeShare = userLikeAddDto.getLikeShare();
         UserLikeTypeEnum userLikeTypeValue = UserLikeTypeEnum.getUserLikeTypeValue(likeShare);
+        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
         ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.LIKE.getValue()), ErrorCode.PARAMS_ERROR, "分享类型错误");
+        ThrowUtils.throwIf(forumPictureTypeValue==null ,ErrorCode.PARAMS_ERROR,"类型错误");
 
         UserLike addUserLike = new UserLike();
         UserLike userLike = this.lambdaQuery()
@@ -219,7 +248,11 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
             boolean update = this.updateById(addUserLike);
             ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "分享失败");
             //添加用户分享的缓存
-            pictureShareCache.addPictureShareCache(targetId);
+            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                pictureShareCache.addPictureShareCache(targetId);
+            }else{
+                forumCache.addForumShareCache(targetId);
+            }
             return true;
         } else {
             addUserLike.setLikeShare(likeShare);
@@ -233,7 +266,11 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
             boolean save = this.save(addUserLike);
             ThrowUtils.throwIf(!save, ErrorCode.PARAMS_ERROR, "分享失败");
             //添加用户分享的缓存
-            pictureShareCache.addPictureShareCache(targetId);
+            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                pictureShareCache.addPictureShareCache(targetId);
+            }else{
+                forumCache.addForumShareCache(targetId);
+            }
             return true;
         }
 
@@ -246,6 +283,7 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
      */
     @Override
     public UserLikeVO getMyShare(User loginUser) {
+
         UserLike userLike = this.lambdaQuery()
                 .eq(UserLike::getUserId, loginUser.getId())
                 .eq(UserLike::getLikeShare, UserLikeTypeEnum.SHARE.getValue())
