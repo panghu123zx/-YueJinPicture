@@ -55,7 +55,7 @@ public class ForumController {
      * @param request
      * @return
      */
-    @PostMapping("/add")
+    @PostMapping("/add/url")
     public BaseResponse<Boolean> addForumByUrl(@RequestBody ForumAddDto forumAddDto, HttpServletRequest request) {
         ThrowUtils.throwIf(forumAddDto == null, ErrorCode.PARAMS_ERROR, "参数错误");
         User loginUser = userService.getLoginUser(request);
@@ -84,6 +84,7 @@ public class ForumController {
      * @return
      */
     @PostMapping("/update")
+    @AuthCheck(mustRole = "admin")
     public BaseResponse<Boolean> updateForum(@RequestBody ForumUpdateDto forumUpdateDto, HttpServletRequest request) {
         ThrowUtils.throwIf(forumUpdateDto == null, ErrorCode.PARAMS_ERROR, "参数错误");
         User loginUser = userService.getLoginUser(request);

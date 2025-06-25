@@ -2,9 +2,11 @@ package com.ph.phpictureback.model.dto.forum;
 
 import com.ph.phpictureback.common.PageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Date;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class ForumQueryDto extends PageRequest {
     /**

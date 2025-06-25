@@ -89,6 +89,7 @@ public class UserLikeVO implements Serializable {
         BeanUtils.copyProperties(userLikeVO, userLike);
         //TODO
         userLike.setLikePic(JSONUtil.toJsonStr(userLikeVO.getLikePic()));
+        userLike.setLikePost(JSONUtil.toJsonStr(userLikeVO.getLikePost()));
         return userLike;
     }
 
@@ -104,6 +105,8 @@ public class UserLikeVO implements Serializable {
         }
         UserLikeVO userLikeVO = new UserLikeVO();
         BeanUtils.copyProperties(userLike, userLikeVO);
+        userLikeVO.setLikePost(JSONUtil.toList(userLike.getLikePost(), String.class));
+        userLikeVO.setLikePic(JSONUtil.toList(userLike.getLikePic(), String.class));
         return userLikeVO;
     }
 

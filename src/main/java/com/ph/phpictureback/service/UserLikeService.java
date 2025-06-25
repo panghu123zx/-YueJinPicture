@@ -30,12 +30,6 @@ public interface UserLikeService extends IService<UserLike> {
      */
     boolean unPictureLise(UserLikeAddDto userLikeAddDto, User loginUser);
 
-    /**
-     * 获取我的点赞
-     * @param loginUser
-     * @return
-     */
-    UserLikeVO getMyLike(User loginUser);
 
     /**
      * 分享
@@ -46,10 +40,4 @@ public interface UserLikeService extends IService<UserLike> {
     boolean addUserShare(UserLikeAddDto userLikeAddDto, User loginUser);
 
 
-    /**
-     * 获取我的分享
-     * @param loginUser
-     * @return
-     */
-    UserLikeVO getMyShare(User loginUser);
 }

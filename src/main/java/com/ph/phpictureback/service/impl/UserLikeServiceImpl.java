@@ -77,47 +77,51 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         UserLike userLike = this.lambdaQuery()
                 .eq(UserLike::getUserId, loginUser.getId())
                 .eq(UserLike::getLikeShare,likeShare)
+                .eq(UserLike::getTargetType, targetType)
                 .one();
 
         //用户有过点赞记录
         if (userLike != null) {
-            //判断用户是否已经点赞过
-            List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
-            if (pictureIdList.contains(targetId)) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "该图片已经点赞过，无法重复点赞");
-            }
-            pictureIdList.add(targetId);
             addUserLike.setId(userLike.getId());
-            addUserLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
-            boolean update = this.updateById(addUserLike);
-            ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "点赞失败");
-            //判断是图片还是帖子
+            //判断用户是否已经点赞过
             if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
+                if (pictureIdList.contains(targetId)) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "该图片已经点赞过，无法重复点赞");
+                }
+                pictureIdList.add(targetId);
+                addUserLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
                 //添加用户点赞的缓存
                 pictureLikeCache.addPictureLikeCache(targetId);
             }else{
+                List<Long> forumIdList = JSONUtil.toList(userLike.getLikePost(), Long.class);
+                if (forumIdList.contains(targetId))
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "该帖子已经点赞过，无法重复点赞");
+                forumIdList.add(targetId);
+                addUserLike.setLikePost(JSONUtil.toJsonStr(forumIdList));
+                //添加用户点赞的缓存
                 forumCache.addForumLikeCache(targetId);
             }
-            return true;
         } else {
             addUserLike.setTargetType(targetType);
             addUserLike.setUserId(loginUser.getId());
             addUserLike.setUserName(loginUser.getUserName());
             addUserLike.setUserAvatar(loginUser.getUserAvatar());
-            List<Long> picIdList = new ArrayList<>();
-            picIdList.add(targetId);
-            addUserLike.setLikePic(JSONUtil.toJsonStr(picIdList));
-            boolean save = this.save(addUserLike);
-            ThrowUtils.throwIf(!save, ErrorCode.PARAMS_ERROR, "点赞失败");
-            //判断是图片还是帖子
             if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
-                //添加用户点赞的缓存
+                List<Long> picIdList = new ArrayList<>();
+                picIdList.add(targetId);
+                addUserLike.setLikePic(JSONUtil.toJsonStr(picIdList));
                 pictureLikeCache.addPictureLikeCache(targetId);
             }else{
+                List<Long> forumIdList = new ArrayList<>();
+                forumIdList.add(targetId);
+                addUserLike.setLikePost(JSONUtil.toJsonStr(forumIdList));
                 forumCache.addForumLikeCache(targetId);
             }
-            return true;
         }
+        boolean save = this.saveOrUpdate(addUserLike);
+        ThrowUtils.throwIf(!save, ErrorCode.PARAMS_ERROR, "点赞失败");
+        return true;
 
     }
 
@@ -134,81 +138,39 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         UserLikeTypeEnum userLikeTypeValue = UserLikeTypeEnum.getUserLikeTypeValue(likeShare);
         ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
         //取消的要是图片的点赞
-        ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.SHARE.getValue()), ErrorCode.PARAMS_ERROR, "点赞类型错误");
+        ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.SHARE.getValue())
+                , ErrorCode.PARAMS_ERROR, "点赞类型错误");
         //点赞的要求是图片和帖子
         ThrowUtils.throwIf(forumPictureTypeValue==null ,ErrorCode.PARAMS_ERROR,"类型错误");
 
         UserLike userLike = this.lambdaQuery()
                 .eq(UserLike::getUserId, loginUser.getId())
                 .eq(UserLike::getLikeShare,likeShare)
+                .eq(UserLike::getTargetType, targetType)
                 .one();
         ThrowUtils.throwIf(userLike == null, ErrorCode.PARAMS_ERROR, "该用户没有点赞记录，无法取消点赞");
-        List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
-        if (!pictureIdList.contains(targetId)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "该图片没有点赞过，无法取消点赞");
-        }
-        pictureIdList.remove(targetId);
-        userLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
-        boolean update = this.updateById(userLike);
-        ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "取消点赞失败");
         if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+            List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
+            if (!pictureIdList.contains(targetId)) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "该图片没有点赞过，无法取消点赞");
+            }
+            pictureIdList.remove(targetId);
+            userLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
             //添加取消点赞的缓存
             pictureLikeCache.deletePictureLikeCache(targetId);
         }else{
+            List<Long> forumIdList = JSONUtil.toList(userLike.getLikePost(), Long.class);
+            if (!forumIdList.contains(targetId)) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "该图片没有点赞过，无法取消点赞");
+            }
+            forumIdList.remove(targetId);
+            userLike.setLikePost(JSONUtil.toJsonStr(forumIdList));
             forumCache.deleteForumLikeCache(targetId);
         }
+        boolean update = this.updateById(userLike);
+        ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "取消点赞失败");
         return true;
     }
-
-    /**
-     * 获取我的点赞
-     * @param loginUser
-     * @return
-     */
-    @Override
-    public UserLikeVO getMyLike(User loginUser) {
-        UserLike userLike = this.lambdaQuery()
-                .eq(UserLike::getUserId, loginUser.getId())
-                .eq(UserLike::getLikeShare, UserLikeTypeEnum.LIKE.getValue())
-                .one();
-        if(ObjectUtil.isNull(userLike) || ObjectUtil.isEmpty(userLike.getLikePic())){
-            return new UserLikeVO();
-        }
-        UserLikeVO userLikeVO = new UserLikeVO();
-        BeanUtils.copyProperties(userLike, userLikeVO);
-        List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
-        List<Picture> pictureList = pictureService.listByIds(pictureIdList);
-        //vo类型的变换
-        List<PictureVO> pictureVOList = pictureList.stream()
-                .map(PictureVO::objToVo)
-                .collect(Collectors.toList());
-        //获取用户信息
-        Set<Long> userIdSet = pictureList.stream()
-                .map(Picture::getUserId)
-                .collect(Collectors.toSet());
-
-        //让用户的id和用户一一对应，组成map集合
-        Map<Long, List<User>> userIdListMap = userService.listByIds(userIdSet)
-                .stream()
-                .collect(Collectors.groupingBy(User::getId));
-
-        //将用户信息设置到图片中
-        pictureVOList.forEach(pictureVO -> {
-            //取出分页的每一个Id
-            Long userId = pictureVO.getUserId();
-            User user = null;
-            //判断集合中是否存在
-            if (userIdListMap.containsKey(userId)) {
-                //根据userId查询第一个的用户
-                user = userIdListMap.get(userId).get(0);
-            }
-            pictureVO.setUser(userService.getUserVo(user));
-        });
-
-        userLikeVO.setLikePic(pictureVOList);
-        return userLikeVO;
-    }
-
 
 
     /**
@@ -225,108 +187,65 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         Integer likeShare = userLikeAddDto.getLikeShare();
         UserLikeTypeEnum userLikeTypeValue = UserLikeTypeEnum.getUserLikeTypeValue(likeShare);
         ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
-        ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.LIKE.getValue()), ErrorCode.PARAMS_ERROR, "分享类型错误");
+        ThrowUtils.throwIf(userLikeTypeValue==null || Objects.equals(likeShare, UserLikeTypeEnum.LIKE.getValue())
+                , ErrorCode.PARAMS_ERROR, "分享类型错误");
         ThrowUtils.throwIf(forumPictureTypeValue==null ,ErrorCode.PARAMS_ERROR,"类型错误");
 
         UserLike addUserLike = new UserLike();
+        addUserLike.setUserId(loginUser.getId());
         UserLike userLike = this.lambdaQuery()
                 .eq(UserLike::getUserId, loginUser.getId())
                 .eq(UserLike::getLikeShare,likeShare)
+                .eq(UserLike::getTargetType, targetType)
                 .one();
 
         //用户有过分享记录
         if (userLike != null) {
-            //判断用户是否已经分享过
-            List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
-            if (pictureIdList.contains(targetId)) {
-                pictureShareCache.addPictureShareCache(targetId);
-                return true;
-            }
-            pictureIdList.add(targetId);
             addUserLike.setId(userLike.getId());
-            addUserLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
-            boolean update = this.updateById(addUserLike);
-            ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "分享失败");
-            //添加用户分享的缓存
             if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
-                pictureShareCache.addPictureShareCache(targetId);
+                //判断用户是否已经分享过
+                List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
+                if (pictureIdList.contains(targetId)) {
+                    pictureShareCache.addPictureShareCache(targetId);
+                    return true;
+                }
+                pictureIdList.add(targetId);
+                addUserLike.setLikePic(JSONUtil.toJsonStr(pictureIdList));
             }else{
-                forumCache.addForumShareCache(targetId);
+                List<Long> forumIdList = JSONUtil.toList(userLike.getLikePost(), Long.class);
+                if (forumIdList.contains(targetId)) {
+                    forumCache.addForumShareCache(targetId);
+                    return true;
+                }
+                forumIdList.add(targetId);
+                addUserLike.setLikePost(JSONUtil.toJsonStr(forumIdList));
             }
-            return true;
         } else {
             addUserLike.setLikeShare(likeShare);
             addUserLike.setTargetType(targetType);
             addUserLike.setUserId(loginUser.getId());
             addUserLike.setUserName(loginUser.getUserName());
             addUserLike.setUserAvatar(loginUser.getUserAvatar());
-            List<Long> picIdList = new ArrayList<>();
-            picIdList.add(targetId);
-            addUserLike.setLikePic(JSONUtil.toJsonStr(picIdList));
-            boolean save = this.save(addUserLike);
-            ThrowUtils.throwIf(!save, ErrorCode.PARAMS_ERROR, "分享失败");
-            //添加用户分享的缓存
+
             if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                List<Long> picIdList = new ArrayList<>();
+                picIdList.add(targetId);
+                addUserLike.setLikePic(JSONUtil.toJsonStr(picIdList));
                 pictureShareCache.addPictureShareCache(targetId);
             }else{
+                List<Long> forumIdList = new ArrayList<>();
+                forumIdList.add(targetId);
+                addUserLike.setLikePost(JSONUtil.toJsonStr(forumIdList));
                 forumCache.addForumShareCache(targetId);
             }
-            return true;
         }
+
+        boolean update = this.saveOrUpdate(addUserLike);
+        ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "分享失败");
+        return true;
 
     }
 
-    /**
-     * 获取我的分享
-     * @param loginUser
-     * @return
-     */
-    @Override
-    public UserLikeVO getMyShare(User loginUser) {
-
-        UserLike userLike = this.lambdaQuery()
-                .eq(UserLike::getUserId, loginUser.getId())
-                .eq(UserLike::getLikeShare, UserLikeTypeEnum.SHARE.getValue())
-                .one();
-        if(ObjectUtil.isNull(userLike) || ObjectUtil.isEmpty(userLike.getLikePic())){
-            return new UserLikeVO();
-        }
-        UserLikeVO userLikeVO = new UserLikeVO();
-        BeanUtils.copyProperties(userLike, userLikeVO);
-        List<Long> pictureIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
-
-
-        List<Picture> pictureList = pictureService.listByIds(pictureIdList);
-        //vo类型的变换
-        List<PictureVO> pictureVOList = pictureList.stream()
-                .map(PictureVO::objToVo)
-                .collect(Collectors.toList());
-        //获取用户信息
-        Set<Long> userIdSet = pictureList.stream()
-                .map(Picture::getUserId)
-                .collect(Collectors.toSet());
-
-        //让用户的id和用户一一对应，组成map集合
-        Map<Long, List<User>> userIdListMap = userService.listByIds(userIdSet)
-                .stream()
-                .collect(Collectors.groupingBy(User::getId));
-
-        //将用户信息设置到图片中
-        pictureVOList.forEach(pictureVO -> {
-            //取出分页的每一个Id
-            Long userId = pictureVO.getUserId();
-            User user = null;
-            //判断集合中是否存在
-            if (userIdListMap.containsKey(userId)) {
-                //根据userId查询第一个的用户
-                user = userIdListMap.get(userId).get(0);
-            }
-            pictureVO.setUser(userService.getUserVo(user));
-        });
-
-        userLikeVO.setLikePic(pictureVOList);
-        return userLikeVO;
-    }
 
 
 }
