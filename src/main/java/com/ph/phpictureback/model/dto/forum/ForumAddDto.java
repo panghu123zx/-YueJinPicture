@@ -2,8 +2,11 @@ package com.ph.phpictureback.model.dto.forum;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ForumAddDto {
+
     /**
      * 标题
      */
@@ -14,14 +17,13 @@ public class ForumAddDto {
      */
     private String content;
 
-
     /**
      * 分类
      */
     private String category;
 
     /**
-     * 封面地址
+     * 图片列表 id
      */
-    private String url;
+    private List<Long> listForumFileId;
 }

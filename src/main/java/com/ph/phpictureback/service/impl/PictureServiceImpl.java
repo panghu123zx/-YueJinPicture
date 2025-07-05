@@ -414,7 +414,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "更新空间大小失败");
             }
 
-
             boolean delete = this.removeById(pictureId);
 
             ThrowUtils.throwIf(!delete, ErrorCode.SYSTEM_ERROR, "删除失败");

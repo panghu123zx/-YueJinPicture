@@ -40,16 +40,6 @@ public class Forum implements Serializable {
     private String category;
 
     /**
-     * 封面地址
-     */
-    private String url;
-
-    /**
-     * 封面缩略图
-     */
-    private String thumbnailUrl;
-
-    /**
      * 点赞数
      */
     private Integer likeCount;

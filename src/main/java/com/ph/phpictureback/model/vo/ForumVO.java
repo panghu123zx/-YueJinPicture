@@ -1,10 +1,12 @@
 package com.ph.phpictureback.model.vo;
 
 import com.ph.phpictureback.model.entry.Forum;
+import com.ph.phpictureback.model.entry.ForumFile;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class ForumVO {
@@ -32,16 +34,6 @@ public class ForumVO {
      * 分类
      */
     private String category;
-
-    /**
-     * 封面地址
-     */
-    private String url;
-
-    /**
-     * 封面缩略图
-     */
-    private String thumbnailUrl;
 
     /**
      * 点赞数
@@ -92,6 +84,11 @@ public class ForumVO {
      * 当前用户的信息
      */
     private UserVO userVO;
+
+    /**
+     * 当前帖子的文件
+     */
+    private List<ForumFile> forumFile;
 
     /**
      * 包装类转对象

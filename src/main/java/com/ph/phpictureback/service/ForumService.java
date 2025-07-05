@@ -6,10 +6,16 @@ import com.ph.phpictureback.model.dto.forum.ForumAddDto;
 import com.ph.phpictureback.model.dto.forum.ForumQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumReviewDto;
 import com.ph.phpictureback.model.dto.forum.ForumUpdateDto;
+import com.ph.phpictureback.model.dto.forumFile.ForumFileAddDto;
+import com.ph.phpictureback.model.dto.forumFile.ForumFileQueryDto;
 import com.ph.phpictureback.model.entry.Forum;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ph.phpictureback.model.entry.ForumFile;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.vo.ForumVO;
+import org.springframework.web.bind.annotation.RequestPart;
+
+import java.util.List;
 
 /**
 * @author 杨志亮
@@ -23,7 +29,7 @@ public interface ForumService extends IService<Forum> {
      * @param loginUser
      * @return
      */
-    boolean addForum(Object inputSource,ForumAddDto forumAddDto, User loginUser);
+    boolean addForum(ForumAddDto forumAddDto, User loginUser);
 
     /**
      * 删除帖子
@@ -58,4 +64,20 @@ public interface ForumService extends IService<Forum> {
      * @return
      */
     boolean reviewForum(ForumReviewDto forumReviewDto, User loginUser);
+
+    /**
+     * 添加帖子文件
+
+     * @param inputSource 输入源
+     * @param forumFileAddDto 帖子文件添加DTO
+     * @return 添加的帖子文件
+     */
+    ForumFile addForumFile(Object inputSource, ForumFileAddDto forumFileAddDto,User loginUser);
+
+    /**
+     * 查询帖子文件
+     * @param forumFileQueryDto
+     * @return
+     */
+    List<ForumFile> queryForumFile(ForumFileQueryDto forumFileQueryDto);
 }

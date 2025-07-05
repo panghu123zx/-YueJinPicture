@@ -2,6 +2,8 @@ package com.ph.phpictureback.model.dto.forum;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ForumUpdateDto {
     /**
@@ -23,9 +25,9 @@ public class ForumUpdateDto {
      * 分类
      */
     private String category;
-
     /**
-     * 封面地址
+     * 图片列表 id
      */
-    private String url;
+    private List<Long> listForumFileId;
+
 }

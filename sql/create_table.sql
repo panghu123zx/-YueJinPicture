@@ -181,8 +181,6 @@ create table forum
     content       text                               not null comment '内容',
     userId        bigint                             not null comment '创建人',
     category      varchar(64)                        not null comment '分类',
-    url           varchar(512)                       null comment '封面地址',
-    thumbnailUrl  varchar(512)                       null comment '封面缩略图',
     likeCount     int      default 0                 null comment '点赞数',
     viewCount     int      default 0                 null comment '浏览数',
     shareCount    int      default 0                 null comment '分享数',
@@ -198,6 +196,23 @@ create table forum
 create index idx_title on forum (title);
 create index idx_category on forum (category);
 create index idx_userId on forum (userId);
+
+-- 论坛图片表
+create table forum_file
+(
+    id         bigint auto_increment comment 'id' primary key,
+    forumId    bigint                             not null comment '帖子 id',
+    picUrl     varchar(512)                       null comment 'url',
+    type       tinyint  default 0                 null comment '图片类型 0-封面，1-文件',
+    size       bigint                             null comment '图片大小',
+    position   int                                null comment '图片位置',
+    sort       int  null comment '图片顺序',
+    createTime datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    updateTime datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete   tinyint  default 0                 null comment '是否删除'
+) comment '论坛图片表' collate = utf8mb4_unicode_ci;
+create index idx_forumId on forum_file (forumId);
+create index idx_position on forum_file (position);
 
 -- 点赞/分享 消息提示
 create table like_message
@@ -216,8 +231,5 @@ create table like_message
     comment '点赞/分享消息' collate = utf8mb4_general_ci
                             row_format = DYNAMIC;
 
-create index idx_targetId
-    on comment ();
 
-create index idx_userId
-    on comment (userId);
+

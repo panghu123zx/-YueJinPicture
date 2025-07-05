@@ -8,7 +8,7 @@ import java.io.Serializable;
  * 点赞
  */
 @Data
-public class UserLikeAddDto implements Serializable {
+public class    UserLikeAddDto implements Serializable {
 
     /**
      * 点赞目标id

@@ -1,13 +1,8 @@
 package com.ph.phpictureback.service.impl;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ph.phpictureback.exception.BusinessException;
@@ -18,23 +13,30 @@ import com.ph.phpictureback.manager.RedissonLock;
 import com.ph.phpictureback.manager.fileUpload.FilePictureUpload;
 import com.ph.phpictureback.manager.fileUpload.UrlPictureUpload;
 import com.ph.phpictureback.manager.redisCache.ForumCache;
+import com.ph.phpictureback.mapper.ForumMapper;
 import com.ph.phpictureback.model.dto.forum.ForumAddDto;
 import com.ph.phpictureback.model.dto.forum.ForumQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumReviewDto;
 import com.ph.phpictureback.model.dto.forum.ForumUpdateDto;
+import com.ph.phpictureback.model.dto.forumFile.ForumFileAddDto;
+import com.ph.phpictureback.model.dto.forumFile.ForumFileQueryDto;
 import com.ph.phpictureback.model.dto.picture.UploadPictureDto;
 import com.ph.phpictureback.model.entry.Forum;
+import com.ph.phpictureback.model.entry.ForumFile;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.enums.ReviewStatusEnum;
 import com.ph.phpictureback.model.vo.ForumVO;
+import com.ph.phpictureback.service.ForumFileService;
 import com.ph.phpictureback.service.ForumService;
-import com.ph.phpictureback.mapper.ForumMapper;
 import com.ph.phpictureback.service.UserService;
 import jodd.util.StringUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author 杨志亮
@@ -56,6 +58,12 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
     @Resource
     private ForumCache forumCache;
 
+    @Resource
+    private ForumFileService forumFileService;
+
+    @Resource
+    private TransactionTemplate transactionTemplate;
+
     /**
      * 添加帖子
      *
@@ -64,38 +72,33 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
      * @return
      */
     @Override
-    public boolean addForum(Object inputSource, ForumAddDto forumAddDto, User loginUser) {
+    public boolean addForum(ForumAddDto forumAddDto, User loginUser) {
         Forum forum = new Forum();
         BeanUtils.copyProperties(forumAddDto, forum);
         //设置创建人
         Long userId = loginUser.getId();
         forum.setUserId(userId);
-        //验证帖子信息
-        if (forum.getTitle() == null || forum.getContent() == null || forum.getCategory() == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "帖子信息不完整");
-        }
-        if (forum.getTitle().length() > 50) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "标题过长");
-        }
-        //论坛可以不带有图片
-        if (inputSource != null) {
-            //上传图片
-            DownloadFileTemplate pictureUpload = filePictureUpload;
-            //判断是否为文url上传
-            if (inputSource instanceof String) {
-                pictureUpload = urlPictureUpload;
-            }
-            //图片存放地址
-            String uploadPath = String.format("/forum/%s", userId);
-            UploadPictureDto uploadPicture = pictureUpload.uploadPicture(inputSource, uploadPath);
-            forum.setUrl(uploadPicture.getUrl());
-            forum.setThumbnailUrl(uploadPicture.getThumbnailUrl());
-        }
+        vaildForum(forum);
         //保存帖子
         Boolean b = redissonLock.lockExecute(String.valueOf(userId), () -> this.save(forum));
         ThrowUtils.throwIf(!b, ErrorCode.SYSTEM_ERROR, "帖子创建失败");
+        //得到这个帖子的所有 图片id
+        List<Long> idList = forumAddDto.getListForumFileId();
+        if (CollectionUtils.isEmpty(idList)) {
+            return true;
+        }
+        //帖子文件表的 更新对应的帖子id
+        idList.forEach(id -> {
+            ForumFile forumFile = new ForumFile();
+            forumFile.setForumId(forum.getId());
+            forumFile.setId(id);
+            boolean update = forumFileService.updateById(forumFile);
+            ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "帖子文件更新失败");
+        });
         return true;
     }
+
+
 
     /**
      * 删除帖子
@@ -113,10 +116,19 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
         if (!forum.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限删除该帖子");
         }
-        //删除帖子
-        Boolean b = redissonLock.lockExecute(String.valueOf(id), () -> this.removeById(id));
-        ThrowUtils.throwIf(!b, ErrorCode.SYSTEM_ERROR, "帖子删除失败");
-        //todo 删除帖子带的图片
+        //启动事务
+        transactionTemplate.execute((status) -> {
+            //删除帖子
+            Boolean b = redissonLock.lockExecute(String.valueOf(id), () -> this.removeById(id));
+            ThrowUtils.throwIf(!b, ErrorCode.SYSTEM_ERROR, "帖子删除失败");
+            // 删除帖子带的图片
+            QueryWrapper<ForumFile> qw = new QueryWrapper<>();
+            qw.eq("forumId", id);
+            boolean remove = forumFileService.remove(qw);
+            ThrowUtils.throwIf(!remove, ErrorCode.SYSTEM_ERROR, "帖子文件删除失败");
+            return true;
+        });
+
         return true;
     }
 
@@ -137,8 +149,23 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
         }
         //更新帖子
         BeanUtils.copyProperties(forumUpdateDto, forum);
+        //验证
+        vaildForum(forum);
         Boolean b = redissonLock.lockExecute(String.valueOf(forumUpdateDto.getId()), () -> this.updateById(forum));
         ThrowUtils.throwIf(!b, ErrorCode.SYSTEM_ERROR, "帖子更新失败");
+        //得到这个帖子的所有 图片id
+        List<Long> idList = forumUpdateDto.getListForumFileId();
+        if (CollectionUtils.isEmpty(idList)) {
+            return true;
+        }
+        //帖子文件表的 更新对应的帖子id
+        idList.forEach(id -> {
+            ForumFile forumFile = new ForumFile();
+            forumFile.setForumId(forum.getId());
+            forumFile.setId(id);
+            boolean update = forumFileService.updateById(forumFile);
+            ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "帖子文件更新失败");
+        });
         return true;
     }
 
@@ -204,6 +231,10 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
                 user = userMap.get(userId).get(0);
             }
             forumVO.setUserVO(userService.getUserVo(user));
+            ForumFileQueryDto query = new ForumFileQueryDto();
+            query.setForumId(forumVO.getId());
+            List<ForumFile> forumFileList = this.queryForumFile(query);
+            forumVO.setForumFile(forumFileList);
         });
         pageVO.setRecords(listForumVO);
 
@@ -226,6 +257,12 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
         ForumVO forumVO = ForumVO.objToVo(forum);
         User user = userService.getById(forum.getUserId());
         forumVO.setUserVO(userService.getUserVo(user));
+        //得到帖子的文件
+        ForumFileQueryDto query = new ForumFileQueryDto();
+        query.setForumId(id);
+        List<ForumFile> forumFileList = this.queryForumFile(query);
+        List<ForumFile> sortList = forumFileList.stream().sorted(Comparator.comparingInt(ForumFile::getSort)).collect(Collectors.toList());
+        forumVO.setForumFile(sortList);
         return forumVO;
     }
 
@@ -260,6 +297,74 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
         boolean update = this.updateById(forum);
         ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "审核失败");
         return true;
+    }
+
+    /**
+     * 添加帖子文件
+     *
+     * @param forumFileAddDto
+     * @return
+     */
+    @Override
+    public ForumFile addForumFile(Object inputSource, ForumFileAddDto forumFileAddDto,User loginUser) {
+        ForumFile forumFile = new ForumFile();
+        BeanUtils.copyProperties(forumFileAddDto, forumFile);
+        //有id就是更新
+        if (forumFileAddDto.getId() != null) {
+            boolean byId = forumFileService.lambdaQuery()
+                    .eq(ForumFile::getId, forumFileAddDto.getId())
+                    .exists();
+            ThrowUtils.throwIf(!byId, ErrorCode.PARAMS_ERROR, "文件不存在");
+        }
+        //上传文件
+        //存放地址
+        String uploadPath = String.format("/forum/%s", loginUser.getId());
+        //判断是文件上传还是url上传
+        DownloadFileTemplate downloadFileTemplate = filePictureUpload;
+        if (inputSource instanceof String) {
+            downloadFileTemplate = urlPictureUpload;
+        }
+        UploadPictureDto uploadPicture = downloadFileTemplate.uploadPicture(inputSource, uploadPath);
+        forumFile.setPicUrl(uploadPicture.getUrl());
+        forumFile.setThumbnailUrl(uploadPicture.getThumbnailUrl());
+        forumFile.setSize(uploadPicture.getPicSize());
+        boolean update = forumFileService.saveOrUpdate(forumFile);
+        ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "上传失败");
+        return forumFile;
+    }
+
+    /**
+     * 查询帖子文件
+     *
+     * @param forumFileQueryDto
+     * @return
+     */
+    @Override
+    public List<ForumFile> queryForumFile(ForumFileQueryDto forumFileQueryDto) {
+        QueryWrapper<ForumFile> qw = new QueryWrapper<>();
+        qw.eq("forumId", forumFileQueryDto.getForumId());
+        qw.eq(ObjectUtil.isNotEmpty(forumFileQueryDto.getType()), "type", forumFileQueryDto.getType());
+        qw.eq(ObjectUtil.isNotEmpty(forumFileQueryDto.getId()), "id", forumFileQueryDto.getId());
+        List<ForumFile> list = forumFileService.list(qw);
+        if (CollectionUtils.isEmpty(list)) {
+            return new ArrayList<>();
+        }
+        return list;
+    }
+
+
+    /**
+     * 帖子校验
+     * @param forum
+     */
+    private static void vaildForum(Forum forum) {
+        //验证帖子信息
+        if (StringUtil.isBlank(forum.getTitle())   || StringUtil.isBlank(forum.getContent())  || StringUtil.isBlank(forum.getCategory())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "帖子信息不完整");
+        }
+        if (forum.getTitle().length() > 50) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "标题过长");
+        }
     }
 
 }
