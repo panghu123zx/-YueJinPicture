@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ph.phpictureback.mapper.ForumFileMapper">
+
+    <resultMap id="BaseResultMap" type="com.ph.phpictureback.model.entry.ForumFile">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="forumId" column="forumId" jdbcType="BIGINT"/>
+            <result property="picUrl" column="picUrl" jdbcType="VARCHAR"/>
+            <result property="thumbnailUrl" column="thumbnailUrl" jdbcType="VARCHAR"/>
+            <result property="type" column="type" jdbcType="TINYINT"/>
+            <result property="size" column="size" jdbcType="BIGINT"/>
+            <result property="position" column="position" jdbcType="INTEGER"/>
+            <result property="sort" column="sort" jdbcType="INTEGER"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,forumId,picUrl,thumbnailUrl,sort,
+        type,size,position,
+        createTime,updateTime,isDelete
+    </sql>
+</mapper>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ph.phpictureback.mapper.LikeMessageMapper">
+
+    <resultMap id="BaseResultMap" type="com.ph.phpictureback.model.entry.LikeMessage">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="receiverId" column="receiverId" jdbcType="BIGINT"/>
+            <result property="sendId" column="sendId" jdbcType="BIGINT"/>
+            <result property="targetType" column="targetType" jdbcType="TINYINT"/>
+            <result property="actionType" column="actionType" jdbcType="TINYINT"/>
+            <result property="targetId" column="targetId" jdbcType="BIGINT"/>
+            <result property="isRead" column="isRead" jdbcType="TINYINT"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="isDeleted" column="isDeleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,receiverId,sendId,
+        targetType,actionType,targetId,
+        isRead,createTime,isDeleted
+    </sql>
+</mapper>
