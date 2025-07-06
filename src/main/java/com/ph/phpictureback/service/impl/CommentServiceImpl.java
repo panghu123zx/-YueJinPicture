@@ -10,6 +10,7 @@ import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.mapper.CommentMapper;
 import com.ph.phpictureback.model.dto.comment.AddCommentDto;
 import com.ph.phpictureback.model.dto.comment.CommentQueryDto;
+import com.ph.phpictureback.model.dto.comment.CommentReadDto;
 import com.ph.phpictureback.model.entry.Comment;
 import com.ph.phpictureback.model.entry.Forum;
 import com.ph.phpictureback.model.entry.Picture;
@@ -191,6 +192,22 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "评论类型错误");
         }
 
+        return true;
+    }
+
+    /**
+     * 读取评论
+     * @param commentReadDto
+     * @return
+     */
+    @Override
+    public boolean readComment(CommentReadDto commentReadDto) {
+        Long id = commentReadDto.getId();
+        Comment comment = this.getById(id);
+        ThrowUtils.throwIf(comment == null, ErrorCode.PARAMS_ERROR, "评论不存在");
+        comment.setIsRead(1);
+        boolean update = this.updateById(comment);
+        ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "读取评论失败");
         return true;
     }
 

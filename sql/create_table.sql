@@ -222,14 +222,16 @@ create table like_message
     receiverId bigint           default 0                 not null comment '消息接收者id',
     sendId     bigint           default 0                 not null comment '消息发送者id',
     targetType tinyint(1)       default 0                 null comment '目标的类型 0-图片 1-帖子',
-    actionId   tinyint(1)       default 0                 null comment '0-点赞，1-分享',
+    actionType   tinyint(1)       default 0                 null comment '0-点赞，1-分享',
     targetId   bigint                                     not null comment '目标的id',
-    isRead     tinyint(1)       default 0                 not null comment '是否已读， 0-未读，1-已读',
+    isRead     tinyint(1)       default 0                 null comment '是否已读， 0-未读，1-已读',
     createTime datetime         default CURRENT_TIMESTAMP not null comment '创建时间',
     isDeleted  tinyint unsigned default '0'               not null comment '逻辑删除 1（true）已删除， 0（false）未删除'
 )
     comment '点赞/分享消息' collate = utf8mb4_general_ci
                             row_format = DYNAMIC;
 
-
+create index idx_receiverId on like_message (receiverId);
+create index idx_sendId on like_message (sendId);
+create index idx_targetId on like_message (targetId);
 

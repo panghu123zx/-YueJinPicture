@@ -8,14 +8,12 @@
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="targetId" column="targetId" jdbcType="BIGINT"/>
             <result property="targetType" column="targetType" jdbcType="TINYINT"/>
+            <result property="isRead" column="isRead" jdbcType="TINYINT"/>
             <result property="userId" column="userId" jdbcType="BIGINT"/>
-            <result property="userName" column="userName" jdbcType="VARCHAR"/>
-            <result property="userAvatar" column="userAvatar" jdbcType="VARCHAR"/>
             <result property="content" column="content" jdbcType="VARCHAR"/>
             <result property="parentId" column="parentId" jdbcType="BIGINT"/>
             <result property="likeCount" column="likeCount" jdbcType="INTEGER"/>
             <result property="fromId" column="fromId" jdbcType="BIGINT"/>
-            <result property="fromName" column="fromName" jdbcType="VARCHAR"/>
             <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
             <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
             <result property="isDeleted" column="isDeleted" jdbcType="TINYINT"/>
@@ -25,7 +23,7 @@
         id,targetId,targetType,
         userId,userName,userAvatar,
         content,parentId,likeCount,
-        fromId,fromName,createTime,
+        fromId,fromName,createTime,isRead,
         updateTime,isDeleted
     </sql>
 </mapper>

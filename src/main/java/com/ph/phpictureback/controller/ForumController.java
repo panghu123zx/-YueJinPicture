@@ -218,7 +218,7 @@ public class ForumController {
      * @param request
      * @return
      */
-    @PostMapping
+    @PostMapping("/queryfile")
     public BaseResponse<List<ForumFile>> queryForumFile(@RequestBody ForumFileQueryDto forumFileQueryDto, HttpServletRequest request) {
         ThrowUtils.throwIf(forumFileQueryDto == null, ErrorCode.PARAMS_ERROR, "参数错误");
         userService.getLoginUser(request);

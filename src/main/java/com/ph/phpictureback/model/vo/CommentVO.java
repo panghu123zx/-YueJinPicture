@@ -68,6 +68,11 @@ public class CommentVO implements Serializable {
     private Date updateTime;
 
     /**
+     * 是否已读 0-未读 1-已读
+     */
+    private Integer isRead;
+
+    /**
      * 当前用户的信息
      */
     private UserVO userVO;
@@ -76,6 +81,15 @@ public class CommentVO implements Serializable {
      * 评论的子级评论
      */
     private List<CommentVO> commentVOChildList;
+
+    /**
+     * 图片信息
+     */
+    private PictureVO pictureVO;
+    /**
+     * 帖子信息
+     */
+    private ForumVO forumVO;
 
 
     /**

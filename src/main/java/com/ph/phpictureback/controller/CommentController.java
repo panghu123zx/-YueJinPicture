@@ -1,5 +1,6 @@
 package com.ph.phpictureback.controller;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.common.BaseResponse;
@@ -10,11 +11,15 @@ import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.model.dto.comment.AddCommentDto;
 import com.ph.phpictureback.model.dto.comment.CommentQueryDto;
+import com.ph.phpictureback.model.dto.comment.CommentReadDto;
 import com.ph.phpictureback.model.dto.comment.LikeCommentDto;
 import com.ph.phpictureback.model.entry.Comment;
 import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.enums.ForumPictureTypeEnum;
 import com.ph.phpictureback.model.vo.CommentVO;
 import com.ph.phpictureback.service.CommentService;
+import com.ph.phpictureback.service.ForumService;
+import com.ph.phpictureback.service.PictureService;
 import com.ph.phpictureback.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +39,12 @@ public class CommentController {
     private CommentService commentService;
     @Resource
     private UserService userService;
+
+    @Resource
+    private PictureService pictureService;
+
+    @Resource
+    private ForumService forumService;
 
 
     /**
@@ -104,20 +115,35 @@ public class CommentController {
     /**
      * 获取我的评论历史
      *
-     * @param pageRequest
+     * @param commentQueryDto
      * @param request
      * @return
      */
     @PostMapping("/getMy/history")
-    public BaseResponse<Page<CommentVO>> getMyCommentHistory(@RequestBody PageRequest pageRequest, HttpServletRequest request) {
-        int current = pageRequest.getCurrent();
-        int pageSize = pageRequest.getPageSize();
+    public BaseResponse<Page<CommentVO>> getMyCommentHistory(@RequestBody CommentQueryDto commentQueryDto, HttpServletRequest request) {
+        int current = commentQueryDto.getCurrent();
+        int pageSize = commentQueryDto.getPageSize();
+        Integer targetType = commentQueryDto.getTargetType();
+        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
+        ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
+
         User loginUser = userService.getLoginUser(request);
 
         QueryWrapper<Comment> qw = new QueryWrapper<>();
         qw.eq("userId", loginUser.getId());
+        qw.eq(ObjectUtil.isNotNull(forumPictureTypeValue.getValue()),"targetType",targetType);
+        //查询到了所有的评论过 我 的图片和帖子的评论
         List<Comment> list = commentService.list(qw);
         List<CommentVO> commentVOList = list.stream().map(CommentVO::objToVo).collect(Collectors.toList());
+        commentVOList.forEach(commentVO -> {
+            Long targetId = commentVO.getTargetId();
+            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                commentVO.setPictureVO(pictureService.getPictureVo(targetId, loginUser));
+            }else{
+                commentVO.setForumVO(forumService.getForumVO(targetId));
+            }
+        });
+
         Page<CommentVO> page = new Page<>(current, pageSize, list.size());
         page.setRecords(commentVOList);
         return ResultUtils.success(page);
@@ -126,22 +152,54 @@ public class CommentController {
     /**
      * 获取评论我的历史
      *
-     * @param pageRequest
+     * @param commentQueryDto
      * @param request
      * @return
      */
     @PostMapping("/get/historyMy")
-    public BaseResponse<Page<CommentVO>> getCommentHistoryMy(@RequestBody PageRequest pageRequest, HttpServletRequest request) {
-        int current = pageRequest.getCurrent();
-        int pageSize = pageRequest.getPageSize();
+    public BaseResponse<Page<CommentVO>> getCommentHistoryMy(@RequestBody CommentQueryDto commentQueryDto, HttpServletRequest request) {
+        int current = commentQueryDto.getCurrent();
+        int pageSize = commentQueryDto.getPageSize();
+        Integer isRead = commentQueryDto.getIsRead();
+        Integer targetType = commentQueryDto.getTargetType();
+        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
+        ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
+
         User loginUser = userService.getLoginUser(request);
 
         QueryWrapper<Comment> qw = new QueryWrapper<>();
         qw.eq("fromId", loginUser.getId());
+        qw.eq(ObjectUtil.isNotNull(isRead),"isRead",isRead);
+        qw.eq(ObjectUtil.isNotNull(forumPictureTypeValue.getValue()),"targetType",targetType);
+        //查询到了所有的评论过 我 的图片和帖子的评论
         List<Comment> list = commentService.list(qw);
         List<CommentVO> commentVOList = list.stream().map(CommentVO::objToVo).collect(Collectors.toList());
+        commentVOList.forEach(commentVO -> {
+            Long targetId = commentVO.getTargetId();
+            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
+                commentVO.setPictureVO(pictureService.getPictureVo(targetId, loginUser));
+            }else{
+                commentVO.setForumVO(forumService.getForumVO(targetId));
+            }
+        });
+
         Page<CommentVO> page = new Page<>(current, pageSize, list.size());
         page.setRecords(commentVOList);
         return ResultUtils.success(page);
+    }
+
+
+    /**
+     * 读取评论
+     * @param commentReadDto
+     * @param request
+     * @return
+     */
+    @PostMapping("/read")
+    public BaseResponse<Boolean> readComment(@RequestBody CommentReadDto commentReadDto, HttpServletRequest request){
+        ThrowUtils.throwIf(commentReadDto ==null, ErrorCode.PARAMS_ERROR,"参数错误");
+        userService.getLoginUser(request);
+        boolean read = commentService.readComment(commentReadDto);
+        return ResultUtils.success(read);
     }
 }

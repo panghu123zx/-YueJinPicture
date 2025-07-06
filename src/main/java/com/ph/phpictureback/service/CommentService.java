@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.common.DeleteRequest;
 import com.ph.phpictureback.model.dto.comment.AddCommentDto;
 import com.ph.phpictureback.model.dto.comment.CommentQueryDto;
+import com.ph.phpictureback.model.dto.comment.CommentReadDto;
 import com.ph.phpictureback.model.entry.Comment;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ph.phpictureback.model.entry.User;
@@ -43,4 +44,10 @@ public interface CommentService extends IService<Comment> {
      */
     boolean addComment(AddCommentDto addCommentDto,User loginUser);
 
+    /**
+     * 读取评论
+     * @param commentReadDto
+     * @return
+     */
+    boolean readComment(CommentReadDto commentReadDto);
 }
