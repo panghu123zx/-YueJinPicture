@@ -155,14 +155,14 @@ public class LikeMessageServiceImpl extends ServiceImpl<LikeMessageMapper, LikeM
             if (userMap.containsKey(sendId)) {
                 User user = userMap.get(sendId).get(0);
                 UserVO userVO = UserVO.objToVo(user);
-                likeMessageVO.setSendUser(userVO);
+                likeMessageVO.setUserVO(userVO);
             }
             //设置目标
             Integer targetType = likeMessageVO.getTargetType();
             Long targetId = likeMessageVO.getTargetId();
             if (targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())) {
                 PictureVO pictureVo = pictureService.getPictureVo(targetId, loginUser);
-                likeMessageVO.setPicture(pictureVo);
+                likeMessageVO.setPictureVO(pictureVo);
             } else {
                 ForumVO forumVO = forumService.getForumVO(targetId);
                 likeMessageVO.setForumVO(forumVO);

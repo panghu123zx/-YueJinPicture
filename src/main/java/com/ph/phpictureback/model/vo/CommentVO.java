@@ -58,6 +58,11 @@ public class CommentVO implements Serializable {
     private Long fromId;
 
     /**
+     * 目标对象的用户id
+     */
+    private Long targetUserId;
+
+    /**
      * 创建时间
      */
     private Date createTime;

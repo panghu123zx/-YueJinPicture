@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
- * 健康检查
+ * 点赞系统
  */
 @RestController
 @RequestMapping("/userlike")
@@ -56,10 +56,10 @@ public class UserLikeController {
      * @return
      */
     @PostMapping("/addUserLike")
-    public BaseResponse<Boolean> addUserLike(@RequestBody UserLikeAddDto userLikeAddDto, HttpServletRequest request) {
+    public BaseResponse<Long> addUserLike(@RequestBody UserLikeAddDto userLikeAddDto, HttpServletRequest request) {
         ThrowUtils.throwIf(userLikeAddDto == null, ErrorCode.PARAMS_ERROR, "参数不能为空");
         User loginUser = userService.getLoginUser(request);
-        Boolean result = userLikeService.addUserLike(userLikeAddDto, loginUser);
+        Long result = userLikeService.addUserLike(userLikeAddDto, loginUser);
         return ResultUtils.success(result);
     }
 
@@ -71,10 +71,10 @@ public class UserLikeController {
      * @return
      */
     @PostMapping("/unUserLike")
-    public BaseResponse<Boolean> unUserLike(@RequestBody UserLikeAddDto userLikeAddDto, HttpServletRequest request) {
+    public BaseResponse<Long> unUserLike(@RequestBody UserLikeAddDto userLikeAddDto, HttpServletRequest request) {
         ThrowUtils.throwIf(userLikeAddDto == null, ErrorCode.PARAMS_ERROR, "参数不能为空");
         User loginUser = userService.getLoginUser(request);
-        Boolean result = userLikeService.unPictureLise(userLikeAddDto, loginUser);
+        Long result = userLikeService.unPictureLise(userLikeAddDto, loginUser);
         return ResultUtils.success(result);
     }
 

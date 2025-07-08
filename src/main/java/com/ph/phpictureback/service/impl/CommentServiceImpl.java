@@ -1,7 +1,10 @@
 package com.ph.phpictureback.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ph.phpictureback.common.DeleteRequest;
 import com.ph.phpictureback.exception.BusinessException;
@@ -15,7 +18,9 @@ import com.ph.phpictureback.model.entry.Comment;
 import com.ph.phpictureback.model.entry.Forum;
 import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.enums.ForumPictureTypeEnum;
 import com.ph.phpictureback.model.vo.CommentVO;
+import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.model.vo.UserVO;
 import com.ph.phpictureback.service.CommentService;
 import com.ph.phpictureback.service.ForumService;
@@ -27,6 +32,9 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author 杨志亮
@@ -58,7 +66,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
     public List<CommentVO> getAllTargetComment(CommentQueryDto commentQueryDto, User loginUser) {
         Long targetId = commentQueryDto.getTargetId();
         Integer targetType = commentQueryDto.getTargetType();
-        //查找所有的父级评论
+        //查找所有目标对象的的父级评论
         QueryWrapper<Comment> qwFather = new QueryWrapper<>();
         qwFather.eq("targetId", targetId);
         qwFather.eq("targetType", targetType);
@@ -145,9 +153,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除失败");
             }
         }
-        if(targetType==0){
+        if (targetType == 0) {
             updateCommentCountDelete(picture);
-        }else{
+        } else {
             updateCommentCountDeleteByForum(forum);
         }
 
@@ -197,6 +205,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
 
     /**
      * 读取评论
+     *
      * @param commentReadDto
      * @return
      */
@@ -209,6 +218,97 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
         boolean update = this.updateById(comment);
         ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "读取评论失败");
         return true;
+    }
+
+    /**
+     * 查询用户评论
+     *
+     * @param page
+     * @param loginUser
+     */
+    @Override
+    public Page<CommentVO> commentMy(Page<Comment> page, User loginUser) {
+        List<Comment> records = page.getRecords();
+        Page<CommentVO> pageVO = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        if (CollUtil.isEmpty(records)) return pageVO;
+
+
+        //转换成为VO类
+        List<CommentVO> commentVOList = records.stream()
+                .map(CommentVO::objToVo)
+                .collect(Collectors.toList());
+
+        //得到所有的评论了 我的 的人的id
+        Set<Long> idSet = records.stream()
+                .map(Comment::getUserId)
+                .collect(Collectors.toSet());
+
+        //得到用户id
+        Map<Long, List<User>> userMap = userService.listByIds(idSet)
+                .stream()
+                .collect(Collectors.groupingBy(User::getId));
+
+        commentVOList.forEach(commentVO -> {
+            //设置评论人的信息
+            Long userId = commentVO.getUserId();
+            if (userMap.containsKey(userId)) {
+                User user = userMap.get(userId).get(0);
+                commentVO.setUserVO(UserVO.objToVo(user));
+            }
+            //设置目标信息
+            Long targetId = commentVO.getTargetId();
+            Integer targetType = commentVO.getTargetType();
+            if (targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())) {
+                commentVO.setPictureVO(pictureService.getPictureVo(targetId, loginUser));
+            } else {
+                commentVO.setForumVO(forumService.getForumVO(targetId));
+            }
+        });
+        pageVO.setRecords(commentVOList);
+        return pageVO;
+    }
+
+    @Override
+    public QueryWrapper<Comment> getQueryWrapper(CommentQueryDto commentQueryDto) {
+        ThrowUtils.throwIf(commentQueryDto == null, ErrorCode.PARAMS_ERROR, "参数错误");
+        QueryWrapper<Comment> qw = new QueryWrapper<>();
+        Long id = commentQueryDto.getId();
+        Long targetId = commentQueryDto.getTargetId();
+        Integer targetType = commentQueryDto.getTargetType();
+        Long userId = commentQueryDto.getUserId();
+        String content = commentQueryDto.getContent();
+        Long parentId = commentQueryDto.getParentId();
+        Integer likeCount = commentQueryDto.getLikeCount();
+        Long fromId = commentQueryDto.getFromId();
+        Integer isRead = commentQueryDto.getIsRead();
+        String sortField = commentQueryDto.getSortField();
+        String sortOrder = commentQueryDto.getSortOrder();
+        Long targetUserId = commentQueryDto.getTargetUserId();
+        Integer isCommentMy = commentQueryDto.getIsCommentMy();
+
+        qw.eq(ObjectUtil.isNotNull(targetId), "targetId", targetId);
+        qw.eq(ObjectUtil.isNotNull(targetType), "targetType", targetType);
+        qw.eq(ObjectUtil.isNotNull(isRead), "isRead", isRead);
+        qw.eq(ObjectUtil.isNotNull(id), "id", id);
+        qw.eq(ObjectUtil.isNotNull(userId), "userId", userId);
+        qw.eq(ObjectUtil.isNotNull(parentId), "parentId", parentId);
+        qw.eq(ObjectUtil.isNotNull(likeCount), "likeCount", likeCount);
+        qw.like(ObjectUtil.isNotNull(content), "content", content);
+        //判断是评论我的消息，还是我发出的消息
+        if(isCommentMy==0){
+            qw.and(wrapper ->
+                    wrapper.eq(ObjectUtil.isNotNull(fromId), "fromId", fromId)
+                            .or(sub -> sub.isNull("fromId").eq("targetUserId", targetUserId))
+            );
+        }else if (isCommentMy==1){
+            qw.eq(ObjectUtil.isNotNull(fromId), "fromId", fromId);
+            qw.eq(ObjectUtil.isNotNull(targetUserId), "targetUserId", targetUserId);
+        }else{
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"参数错误");
+        }
+
+        qw.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
+        return qw;
     }
 
     /**
@@ -265,6 +365,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
             ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "更新评论数失败");
         }
     }
+
+
 }
 
 

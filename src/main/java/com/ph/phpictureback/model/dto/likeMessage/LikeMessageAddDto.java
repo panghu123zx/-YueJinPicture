@@ -17,7 +17,7 @@ public class LikeMessageAddDto {
     private Integer targetType;
 
     /**
-     * 0-点赞，1-分享，2-评论
+     * 0-点赞，1-分享
      */
     private Integer actionType;
 

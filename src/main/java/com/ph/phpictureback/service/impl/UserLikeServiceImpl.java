@@ -61,7 +61,7 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
      * @return
      */
     @Override
-    public boolean addUserLike(UserLikeAddDto userLikeAddDto, User loginUser) {
+    public Long addUserLike(UserLikeAddDto userLikeAddDto, User loginUser) {
         Long targetId = userLikeAddDto.getTargetId();
         Integer targetType = userLikeAddDto.getTargetType();
         Integer likeShare = userLikeAddDto.getLikeShare();
@@ -121,7 +121,7 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         }
         boolean save = this.saveOrUpdate(addUserLike);
         ThrowUtils.throwIf(!save, ErrorCode.PARAMS_ERROR, "点赞失败");
-        return true;
+        return addUserLike.getId();
 
     }
 
@@ -131,7 +131,7 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
      * @param loginUser
      * @return
      */
-    public boolean unPictureLise(UserLikeAddDto userLikeAddDto, User loginUser){
+    public Long unPictureLise(UserLikeAddDto userLikeAddDto, User loginUser){
         Long targetId = userLikeAddDto.getTargetId();
         Integer targetType = userLikeAddDto.getTargetType();
         Integer likeShare = userLikeAddDto.getLikeShare();
@@ -169,7 +169,7 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         }
         boolean update = this.updateById(userLike);
         ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "取消点赞失败");
-        return true;
+        return userLike.getId();
     }
 
 

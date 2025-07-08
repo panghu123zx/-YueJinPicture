@@ -40,6 +40,11 @@ public class AddCommentDto implements Serializable {
      */
     private Long parentId = -1L;
 
+    /**
+     * 目标对象的用户id
+     */
+    private Long targetUserId;
+
 
     private static final long serialVersionUID = 1L;
 }

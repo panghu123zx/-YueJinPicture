@@ -60,6 +60,11 @@ public class Comment implements Serializable {
      */
     private Integer isRead;
 
+    /**
+     * 目标对象的用户id
+     */
+    private Long targetUserId;
+
 
     /**
      * 创建时间

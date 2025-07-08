@@ -12,6 +12,7 @@
             <result property="userId" column="userId" jdbcType="BIGINT"/>
             <result property="content" column="content" jdbcType="VARCHAR"/>
             <result property="parentId" column="parentId" jdbcType="BIGINT"/>
+            <result property="targetUserId" column="targetUserId" jdbcType="BIGINT"/>
             <result property="likeCount" column="likeCount" jdbcType="INTEGER"/>
             <result property="fromId" column="fromId" jdbcType="BIGINT"/>
             <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
@@ -23,7 +24,7 @@
         id,targetId,targetType,
         userId,userName,userAvatar,
         content,parentId,likeCount,
-        fromId,fromName,createTime,isRead,
+        fromId,fromName,createTime,isRead,targetUserId,
         updateTime,isDeleted
     </sql>
 </mapper>

@@ -1,5 +1,6 @@
 package com.ph.phpictureback.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.common.DeleteRequest;
 import com.ph.phpictureback.model.dto.comment.AddCommentDto;
@@ -50,4 +51,14 @@ public interface CommentService extends IService<Comment> {
      * @return
      */
     boolean readComment(CommentReadDto commentReadDto);
+
+    /**
+     * 评论我的
+     * @param page
+     * @param loginUser
+     * @return
+     */
+    Page<CommentVO> commentMy(Page<Comment> page,User loginUser);
+
+    QueryWrapper<Comment> getQueryWrapper(CommentQueryDto commentQueryDto);
 }

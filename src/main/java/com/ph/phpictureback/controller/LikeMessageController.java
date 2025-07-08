@@ -69,7 +69,6 @@ public class LikeMessageController {
         User loginUser = userService.getLoginUser(request);
         int current = likeMessageQueryDto.getCurrent();
         int pageSize = likeMessageQueryDto.getPageSize();
-        likeMessageQueryDto.setReceiverId(loginUser.getId());
 
         Page<LikeMessage> page = likeMessageService.page(new Page<>(current, pageSize)
                 , likeMessageService.getQueryWrapper(likeMessageQueryDto));

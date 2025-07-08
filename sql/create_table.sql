@@ -109,21 +109,23 @@ CREATE INDEX idx_spaceType ON space (spaceType);
 -- 评论表
 create table comment
 (
-    id         bigint                                     not null comment '主键id'
+    id           bigint                                     not null comment '主键id'
         primary key,
-    targetId   bigint           default 0                 not null comment '目标id',
-    targetType tinyint(1)       default 0                 not null comment '目标的类型 0-图片 1-帖子',
-    userId     bigint           default 0                 not null comment '用户id',
-    userName   varchar(50)                                null comment '用户昵称',
-    userAvatar varchar(255)                               null comment '用户头像',
-    content    varchar(500)                               null comment '评论内容',
-    parentId   bigint           default -1                null comment '父级评论id',
-    likeCount  int              default 0                 null comment '点赞数量',
-    fromId     bigint                                     null comment '回复记录id',
-    fromName   varchar(255) collate utf8mb4_bin           null comment '回复人名称',
-    createTime datetime         default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime datetime         default CURRENT_TIMESTAMP not null comment '更新时间',
-    isDeleted  tinyint unsigned default '0'               not null comment '逻辑删除 1（true）已删除， 0（false）未删除'
+    targetId     bigint           default 0                 not null comment '目标id',
+    targetType   tinyint(1)       default 0                 not null comment '目标的类型 0-图片 1-帖子',
+    userId       bigint           default 0                 not null comment '用户id',
+    userName     varchar(50)                                null comment '用户昵称',
+    userAvatar   varchar(255)                               null comment '用户头像',
+    content      varchar(500)                               null comment '评论内容',
+    parentId     bigint           default -1                null comment '父级评论id',
+    likeCount    int              default 0                 null comment '点赞数量',
+    fromId       bigint                                     null comment '回复记录id',
+    fromName     varchar(255) collate utf8mb4_bin           null comment '回复人名称',
+    targetUserId BIGINT                                     null comment '目标用户id',
+    isRead       tinyint(1)       default 0                 null comment '是否已读',
+    createTime   datetime         default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime   datetime         default CURRENT_TIMESTAMP not null comment '更新时间',
+    isDeleted    tinyint unsigned default '0'               not null comment '逻辑删除 1（true）已删除， 0（false）未删除'
 )
     comment '评论' collate = utf8mb4_general_ci
                    row_format = DYNAMIC;
@@ -206,7 +208,7 @@ create table forum_file
     type       tinyint  default 0                 null comment '图片类型 0-封面，1-文件',
     size       bigint                             null comment '图片大小',
     position   int                                null comment '图片位置',
-    sort       int  null comment '图片顺序',
+    sort       int                                null comment '图片顺序',
     createTime datetime default CURRENT_TIMESTAMP null comment '创建时间',
     updateTime datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete   tinyint  default 0                 null comment '是否删除'
@@ -222,7 +224,7 @@ create table like_message
     receiverId bigint           default 0                 not null comment '消息接收者id',
     sendId     bigint           default 0                 not null comment '消息发送者id',
     targetType tinyint(1)       default 0                 null comment '目标的类型 0-图片 1-帖子',
-    actionType   tinyint(1)       default 0                 null comment '0-点赞，1-分享',
+    actionType tinyint(1)       default 0                 null comment '0-点赞，1-分享',
     targetId   bigint                                     not null comment '目标的id',
     isRead     tinyint(1)       default 0                 null comment '是否已读， 0-未读，1-已读',
     createTime datetime         default CURRENT_TIMESTAMP not null comment '创建时间',

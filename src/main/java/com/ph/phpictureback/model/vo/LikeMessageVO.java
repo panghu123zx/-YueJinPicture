@@ -51,12 +51,12 @@ public class LikeMessageVO {
     /**
      * 消息发送者
      */
-    private UserVO sendUser;
+    private UserVO userVO;
 
     /**
      * 图片信息
      */
-    private PictureVO picture;
+    private PictureVO pictureVO;
 
     /**
      * 帖子信息

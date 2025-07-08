@@ -20,7 +20,7 @@ public interface UserLikeService extends IService<UserLike> {
      * @param loginUser
      * @return
      */
-    boolean addUserLike(UserLikeAddDto userLikeAddDto, User loginUser);
+    Long addUserLike(UserLikeAddDto userLikeAddDto, User loginUser);
 
     /**
      * 取消点赞
@@ -28,7 +28,7 @@ public interface UserLikeService extends IService<UserLike> {
      * @param loginUser
      * @return
      */
-    boolean unPictureLise(UserLikeAddDto userLikeAddDto, User loginUser);
+    Long unPictureLise(UserLikeAddDto userLikeAddDto, User loginUser);
 
 
     /**

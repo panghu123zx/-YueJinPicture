@@ -40,11 +40,6 @@ public class CommentController {
     @Resource
     private UserService userService;
 
-    @Resource
-    private PictureService pictureService;
-
-    @Resource
-    private ForumService forumService;
 
 
     /**
@@ -55,7 +50,8 @@ public class CommentController {
      * @return
      */
     @PostMapping("/get/target")
-    public BaseResponse<List<CommentVO>> getTargetComment(@RequestBody CommentQueryDto commentQueryDto, HttpServletRequest request) {
+    public BaseResponse<List<CommentVO>> getTargetComment(@RequestBody CommentQueryDto commentQueryDto
+            , HttpServletRequest request) {
         ThrowUtils.throwIf(commentQueryDto == null, ErrorCode.PARAMS_ERROR, "参数不能为空");
         User loginUser = userService.getLoginUser(request);
         List<CommentVO> commentVOList = commentService.getAllTargetComment(commentQueryDto, loginUser);
@@ -113,79 +109,22 @@ public class CommentController {
 
 
     /**
-     * 获取我的评论历史
+     * 获取评论历史
      *
      * @param commentQueryDto
      * @param request
      * @return
      */
-    @PostMapping("/getMy/history")
-    public BaseResponse<Page<CommentVO>> getMyCommentHistory(@RequestBody CommentQueryDto commentQueryDto, HttpServletRequest request) {
-        int current = commentQueryDto.getCurrent();
-        int pageSize = commentQueryDto.getPageSize();
-        Integer targetType = commentQueryDto.getTargetType();
-        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
-        ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
-
-        User loginUser = userService.getLoginUser(request);
-
-        QueryWrapper<Comment> qw = new QueryWrapper<>();
-        qw.eq("userId", loginUser.getId());
-        qw.eq(ObjectUtil.isNotNull(forumPictureTypeValue.getValue()),"targetType",targetType);
-        //查询到了所有的评论过 我 的图片和帖子的评论
-        List<Comment> list = commentService.list(qw);
-        List<CommentVO> commentVOList = list.stream().map(CommentVO::objToVo).collect(Collectors.toList());
-        commentVOList.forEach(commentVO -> {
-            Long targetId = commentVO.getTargetId();
-            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
-                commentVO.setPictureVO(pictureService.getPictureVo(targetId, loginUser));
-            }else{
-                commentVO.setForumVO(forumService.getForumVO(targetId));
-            }
-        });
-
-        Page<CommentVO> page = new Page<>(current, pageSize, list.size());
-        page.setRecords(commentVOList);
-        return ResultUtils.success(page);
-    }
-
-    /**
-     * 获取评论我的历史
-     *
-     * @param commentQueryDto
-     * @param request
-     * @return
-     */
-    @PostMapping("/get/historyMy")
+    @PostMapping("/get/history")
     public BaseResponse<Page<CommentVO>> getCommentHistoryMy(@RequestBody CommentQueryDto commentQueryDto, HttpServletRequest request) {
+        ThrowUtils.throwIf(commentQueryDto==null,ErrorCode.PARAMS_ERROR,"参数为空");
+        User loginUser = userService.getLoginUser(request);
         int current = commentQueryDto.getCurrent();
         int pageSize = commentQueryDto.getPageSize();
-        Integer isRead = commentQueryDto.getIsRead();
-        Integer targetType = commentQueryDto.getTargetType();
-        ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
-        ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
-
-        User loginUser = userService.getLoginUser(request);
-
-        QueryWrapper<Comment> qw = new QueryWrapper<>();
-        qw.eq("fromId", loginUser.getId());
-        qw.eq(ObjectUtil.isNotNull(isRead),"isRead",isRead);
-        qw.eq(ObjectUtil.isNotNull(forumPictureTypeValue.getValue()),"targetType",targetType);
-        //查询到了所有的评论过 我 的图片和帖子的评论
-        List<Comment> list = commentService.list(qw);
-        List<CommentVO> commentVOList = list.stream().map(CommentVO::objToVo).collect(Collectors.toList());
-        commentVOList.forEach(commentVO -> {
-            Long targetId = commentVO.getTargetId();
-            if(targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())){
-                commentVO.setPictureVO(pictureService.getPictureVo(targetId, loginUser));
-            }else{
-                commentVO.setForumVO(forumService.getForumVO(targetId));
-            }
-        });
-
-        Page<CommentVO> page = new Page<>(current, pageSize, list.size());
-        page.setRecords(commentVOList);
-        return ResultUtils.success(page);
+        Page<Comment> page = commentService.page(new Page<>(current, pageSize)
+                , commentService.getQueryWrapper(commentQueryDto));
+        Page<CommentVO> pageVO = commentService.commentMy(page,loginUser);
+        return ResultUtils.success(pageVO);
     }
 
 
