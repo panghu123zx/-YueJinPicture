@@ -1,8 +1,16 @@
 package com.ph.phpictureback.service.impl;
+import java.util.List;
+
+import cn.hutool.core.util.StrUtil;
+import com.ph.phpictureback.model.dto.userlike.UserLikeQueryDto;
+import com.ph.phpictureback.model.entry.Forum;
+import com.ph.phpictureback.model.vo.ForumVO;
+import java.util.Date;
 
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ph.phpictureback.exception.BusinessException;
@@ -19,6 +27,7 @@ import com.ph.phpictureback.model.enums.ForumPictureTypeEnum;
 import com.ph.phpictureback.model.enums.UserLikeTypeEnum;
 import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.model.vo.UserLikeVO;
+import com.ph.phpictureback.service.ForumService;
 import com.ph.phpictureback.service.PictureService;
 import com.ph.phpictureback.service.UserLikeService;
 import com.ph.phpictureback.mapper.UserLikeMapper;
@@ -52,6 +61,9 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
     private UserService userService;
     @Resource
     private ForumCache forumCache;
+
+    @Resource
+    private ForumService forumService;
 
     /**
      * 点赞
@@ -244,6 +256,26 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "分享失败");
         return true;
 
+    }
+
+    @Override
+    public QueryWrapper<UserLike> getQueryWrapper(UserLikeQueryDto userLikeQueryDto) {
+        ThrowUtils.throwIf(userLikeQueryDto == null, ErrorCode.PARAMS_ERROR, "参数不能为空");
+        QueryWrapper<UserLike> qw = new QueryWrapper<>();
+
+        Long targetId = userLikeQueryDto.getTargetId();
+        Integer targetType = userLikeQueryDto.getTargetType();
+        Integer likeShare = userLikeQueryDto.getLikeShare();
+        String sortField = userLikeQueryDto.getSortField();
+        String sortOrder = userLikeQueryDto.getSortOrder();
+
+        qw.eq(ObjectUtil.isNotNull(targetId), "targetId", targetId);
+        qw.eq(ObjectUtil.isNotNull(targetType), "targetType", targetType);
+        qw.eq(ObjectUtil.isNotNull(likeShare), "likeShare", likeShare);
+        qw.orderBy(StrUtil.isNotEmpty(sortField),sortOrder.equals("ascend"),sortField);
+
+
+        return qw;
     }
 
 

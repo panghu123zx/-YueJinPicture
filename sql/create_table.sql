@@ -221,8 +221,8 @@ create table like_message
 (
     id         bigint auto_increment comment '主键id'
         primary key,
-    receiverId bigint           default 0                 not null comment '消息接收者id',
-    sendId     bigint           default 0                 not null comment '消息发送者id',
+    receiverId bigint                                     not null comment '消息接收者id',
+    sendId     bigint                                     not null comment '消息发送者id',
     targetType tinyint(1)       default 0                 null comment '目标的类型 0-图片 1-帖子',
     actionType tinyint(1)       default 0                 null comment '0-点赞，1-分享',
     targetId   bigint                                     not null comment '目标的id',
@@ -237,3 +237,20 @@ create index idx_receiverId on like_message (receiverId);
 create index idx_sendId on like_message (sendId);
 create index idx_targetId on like_message (targetId);
 
+
+-- 关注表
+create table follow
+(
+    id         bigint auto_increment comment '主键id'
+        primary key,
+    userId     bigint                                     not null comment '被关注的人的id',
+    followerId bigint                                     not null comment '粉丝id',
+    followState tinyint(1)       default 0                 null comment '关注状态， 0-已关注，1-已取消关注',
+    isMutual     tinyint(1)       default 0                 null comment '是否双向关注， 0-否，1-是',
+    createTime datetime         default CURRENT_TIMESTAMP not null comment '创建时间',
+    isDeleted  tinyint unsigned default '0'               not null comment '逻辑删除 1（true）已删除， 0（false）未删除'
+)
+    comment '关注表' collate = utf8mb4_general_ci
+                     row_format = DYNAMIC;
+create index idx_followerId on follow (followerId);
+create index idx_userId on follow (userId);

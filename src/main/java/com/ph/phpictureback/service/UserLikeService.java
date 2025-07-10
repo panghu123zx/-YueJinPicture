@@ -1,7 +1,9 @@
 package com.ph.phpictureback.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.model.dto.userlike.UserLikeAddDto;
+import com.ph.phpictureback.model.dto.userlike.UserLikeQueryDto;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.entry.UserLike;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -39,5 +41,6 @@ public interface UserLikeService extends IService<UserLike> {
      */
     boolean addUserShare(UserLikeAddDto userLikeAddDto, User loginUser);
 
+    QueryWrapper<UserLike> getQueryWrapper(UserLikeQueryDto userLikeQueryDto);
 
 }

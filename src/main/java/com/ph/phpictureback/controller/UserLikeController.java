@@ -1,5 +1,6 @@
 package com.ph.phpictureback.controller;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -156,29 +157,32 @@ public class UserLikeController {
      * @return
      */
     @PostMapping("/get/likepic")
-    public BaseResponse<Page<Picture>> getLikePic(@RequestBody UserLikeQueryDto userLikeQueryDto, HttpServletRequest request) {
+    public BaseResponse<Page<PictureVO>> getLikePic(@RequestBody UserLikeQueryDto userLikeQueryDto, HttpServletRequest request) {
         int pageSize = userLikeQueryDto.getPageSize();
         int current = userLikeQueryDto.getCurrent();
+        User loginUser = userService.getLoginUser(request);
+
         Integer targetType = userLikeQueryDto.getTargetType();
+
         Integer likeShare = userLikeQueryDto.getLikeShare();
         ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
-        ThrowUtils.throwIf(forumPictureTypeValue == null || !targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())
-                , ErrorCode.PARAMS_ERROR, "参数错误");
-        UserLikeTypeEnum userLikeTypeEnum = UserLikeTypeEnum.getUserLikeTypeValue(likeShare);
-        ThrowUtils.throwIf(userLikeTypeEnum == null, ErrorCode.PARAMS_ERROR, "参数错误");
+        ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
 
-        User loginUser = userService.getLoginUser(request);
+
         QueryWrapper<UserLike> qw = new QueryWrapper<>();
         qw.eq("userId", loginUser.getId());
-        qw.eq("likeShare", userLikeTypeEnum.getValue());
-        qw.eq("targetType", forumPictureTypeValue.getValue());
+        qw.eq("likeShare", likeShare);
+        qw.eq("targetType", targetType);
         UserLike userLike = userLikeService.getOne(qw);
-
         List<Long> picIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
         List<Picture> pictureList = pictureService.listByIds(picIdList);
         Page<Picture> page = new Page<>(current, pageSize, pictureList.size());
         page.setRecords(pictureList);
-        return ResultUtils.success(page);
+        if(CollUtil.isEmpty(pictureList)){
+            return ResultUtils.success(new Page<>(current, pageSize, pictureList.size()));
+        }
+        Page<PictureVO> pictureVOPage = pictureService.listPictureVo(page, request);
+        return ResultUtils.success(pictureVOPage);
 
     }
 
