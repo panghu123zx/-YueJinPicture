@@ -11,6 +11,7 @@ import com.ph.phpictureback.constant.UserConstant;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.model.dto.forum.ForumAddDto;
+import com.ph.phpictureback.model.dto.picture.PictureQueryDto;
 import com.ph.phpictureback.model.dto.userlike.UserLikeAddDto;
 import com.ph.phpictureback.model.dto.userlike.UserLikeQueryDto;
 import com.ph.phpictureback.model.entry.Forum;
@@ -19,6 +20,7 @@ import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.entry.UserLike;
 import com.ph.phpictureback.model.enums.ForumPictureTypeEnum;
 import com.ph.phpictureback.model.enums.UserLikeTypeEnum;
+import com.ph.phpictureback.model.vo.ForumVO;
 import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.model.vo.UserLikeVO;
 import com.ph.phpictureback.service.ForumService;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 点赞系统
@@ -157,13 +160,13 @@ public class UserLikeController {
      * @return
      */
     @PostMapping("/get/likepic")
-    public BaseResponse<Page<PictureVO>> getLikePic(@RequestBody UserLikeQueryDto userLikeQueryDto, HttpServletRequest request) {
+    public BaseResponse<Page<PictureVO>> getLikePic(@RequestBody UserLikeQueryDto userLikeQueryDto
+            , HttpServletRequest request) {
         int pageSize = userLikeQueryDto.getPageSize();
         int current = userLikeQueryDto.getCurrent();
         User loginUser = userService.getLoginUser(request);
 
         Integer targetType = userLikeQueryDto.getTargetType();
-
         Integer likeShare = userLikeQueryDto.getLikeShare();
         ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
         ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
@@ -174,13 +177,19 @@ public class UserLikeController {
         qw.eq("likeShare", likeShare);
         qw.eq("targetType", targetType);
         UserLike userLike = userLikeService.getOne(qw);
+        if (userLike == null) {
+            return ResultUtils.success(new Page<>(current, pageSize));
+        }
+
         List<Long> picIdList = JSONUtil.toList(userLike.getLikePic(), Long.class);
         List<Picture> pictureList = pictureService.listByIds(picIdList);
         Page<Picture> page = new Page<>(current, pageSize, pictureList.size());
+        pictureList = pictureList.stream()
+                .skip((long) (current - 1) * pageSize)
+                .limit(pageSize)
+                .collect(Collectors.toList());
+
         page.setRecords(pictureList);
-        if(CollUtil.isEmpty(pictureList)){
-            return ResultUtils.success(new Page<>(current, pageSize, pictureList.size()));
-        }
         Page<PictureVO> pictureVOPage = pictureService.listPictureVo(page, request);
         return ResultUtils.success(pictureVOPage);
 
@@ -194,28 +203,32 @@ public class UserLikeController {
      * @return
      */
     @PostMapping("/get/likeforum")
-    public BaseResponse<Page<Forum>> getLikePost(@RequestBody UserLikeQueryDto userLikeQueryDto, HttpServletRequest request) {
+    public BaseResponse<Page<ForumVO>> getLikePost(@RequestBody UserLikeQueryDto userLikeQueryDto, HttpServletRequest request) {
         int pageSize = userLikeQueryDto.getPageSize();
         int current = userLikeQueryDto.getCurrent();
         Integer targetType = userLikeQueryDto.getTargetType();
         Integer likeShare = userLikeQueryDto.getLikeShare();
         ForumPictureTypeEnum forumPictureTypeValue = ForumPictureTypeEnum.getForumPictureTypeValue(targetType);
-        ThrowUtils.throwIf(forumPictureTypeValue == null || !targetType.equals(ForumPictureTypeEnum.FORUM.getValue())
-                , ErrorCode.PARAMS_ERROR, "参数错误");
+        ThrowUtils.throwIf(forumPictureTypeValue == null, ErrorCode.PARAMS_ERROR, "参数错误");
         UserLikeTypeEnum userLikeTypeEnum = UserLikeTypeEnum.getUserLikeTypeValue(likeShare);
         ThrowUtils.throwIf(userLikeTypeEnum == null, ErrorCode.PARAMS_ERROR, "参数错误");
 
         User loginUser = userService.getLoginUser(request);
         QueryWrapper<UserLike> qw = new QueryWrapper<>();
         qw.eq("userId", loginUser.getId());
-        qw.eq("likeShare", UserLikeTypeEnum.SHARE.getValue());
+        qw.eq("likeShare", likeShare);
         qw.eq("targetType", forumPictureTypeValue.getValue());
         UserLike userLike = userLikeService.getOne(qw);
         List<Long> picIdList = JSONUtil.toList(userLike.getLikePost(), Long.class);
         List<Forum> forumList = forumService.listByIds(picIdList);
         Page<Forum> page = new Page<>(current, pageSize, forumList.size());
+        forumList = forumList.stream()
+                .skip((long) (current - 1) * pageSize)
+                .limit(pageSize)
+                .collect(Collectors.toList());
         page.setRecords(forumList);
-        return ResultUtils.success(page);
+        Page<ForumVO> forumVOPage = forumService.listForumVO(page);
+        return ResultUtils.success(forumVOPage);
     }
 
 }

@@ -114,13 +114,10 @@ create table comment
     targetId     bigint           default 0                 not null comment '目标id',
     targetType   tinyint(1)       default 0                 not null comment '目标的类型 0-图片 1-帖子',
     userId       bigint           default 0                 not null comment '用户id',
-    userName     varchar(50)                                null comment '用户昵称',
-    userAvatar   varchar(255)                               null comment '用户头像',
     content      varchar(500)                               null comment '评论内容',
     parentId     bigint           default -1                null comment '父级评论id',
     likeCount    int              default 0                 null comment '点赞数量',
     fromId       bigint                                     null comment '回复记录id',
-    fromName     varchar(255) collate utf8mb4_bin           null comment '回复人名称',
     targetUserId BIGINT                                     null comment '目标用户id',
     isRead       tinyint(1)       default 0                 null comment '是否已读',
     createTime   datetime         default CURRENT_TIMESTAMP not null comment '创建时间',
@@ -241,16 +238,65 @@ create index idx_targetId on like_message (targetId);
 -- 关注表
 create table follow
 (
-    id         bigint auto_increment comment '主键id'
+    id          bigint auto_increment comment '主键id'
         primary key,
-    userId     bigint                                     not null comment '被关注的人的id',
-    followerId bigint                                     not null comment '粉丝id',
+    userId      bigint                                     not null comment '被关注的人的id',
+    followerId  bigint                                     not null comment '粉丝id',
     followState tinyint(1)       default 0                 null comment '关注状态， 0-已关注，1-已取消关注',
-    isMutual     tinyint(1)       default 0                 null comment '是否双向关注， 0-否，1-是',
-    createTime datetime         default CURRENT_TIMESTAMP not null comment '创建时间',
-    isDeleted  tinyint unsigned default '0'               not null comment '逻辑删除 1（true）已删除， 0（false）未删除'
+    isMutual    tinyint(1)       default 0                 null comment '是否双向关注， 0-否，1-是',
+    createTime  datetime         default CURRENT_TIMESTAMP not null comment '创建时间',
+    isDeleted   tinyint unsigned default '0'               not null comment '逻辑删除 1（true）已删除， 0（false）未删除'
 )
     comment '关注表' collate = utf8mb4_general_ci
                      row_format = DYNAMIC;
 create index idx_followerId on follow (followerId);
 create index idx_userId on follow (userId);
+
+
+-- 消息的内容
+create table chat_message
+(
+    id           bigint auto_increment comment 'id'
+        primary key,
+    sessionId    varchar(128)                         null comment '会话id，链接为user1_user2用于区别会话的,id按大小排列',
+    replayId     bigint                               null comment '回复消息的id',
+    sendId       bigint                               not null comment '聊天发送者的id',
+    receiveId    bigint                               not null comment '聊天接收者的id',
+    content      text                                 null comment '消息内容',
+    messageType  tinyint(1) default '0'               null comment '消息类型 0-图片，1-文件',
+    targetId     bigint                               null comment '目标的id',
+    isRead       tinyint(1) default 0                 null comment '是否已读， 0-未读，1-已读',
+    chatPromptId bigint                               not null comment '消息提示的id',
+    createTime   datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime   datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete     tinyint(1) default 0                 not null comment '是否删除'
+)
+    comment '用户聊天表' collate = utf8mb4_unicode_ci;
+create index idx_sendId on chat_message (sendId);
+create index idx_receiveId on chat_message (receiveId);
+create index idx_sessionId on chat_message (sessionId);
+create index idx_replayId on chat_message (replayId);
+create index idx_targetId on chat_message (targetId);
+create index idx_chatPromptId on chat_message (chatPromptId);
+
+
+-- 消息的提示
+create table chat_prompt
+(
+    id              bigint auto_increment comment 'id' primary key,
+    userId          bigint                               not null comment '用户id',
+    targetId        bigint                               not null comment '目标id',
+    title           varchar(128)                         null comment '聊天记录的名称',
+    receiveTitle    varchar(128)                         null comment '对方定义的聊天名称',
+    chatType        tinyint(1) default '0'               null comment '聊天类型 0-私信 ,1-好友，2-群聊',
+    unreadCount     int                                  null comment '未读消息数量',
+    lastMessage     text                                 null comment '最后一条消息内容',
+    lastMessageTime datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '最后交流的时间',
+    createTime      datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime      datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete        tinyint(1) default 0                 not null comment '是否删除'
+) comment '消息提示表' collate = utf8mb4_unicode_ci  row_format = DYNAMIC;
+create index idx_userId on chat_prompt (userId);
+create index idx_targetId on chat_prompt (targetId);
+create index idx_title on chat_prompt (title);
+create index idx_receiveTitle on chat_prompt (receiveTitle);

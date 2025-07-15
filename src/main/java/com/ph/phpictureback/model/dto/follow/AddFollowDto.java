@@ -16,10 +16,14 @@ public class AddFollowDto implements Serializable {
      */
     private Long userId;
 
+    private String userIdName;
+
     /**
      * 粉丝id
      */
     private Long followerId;
+
+    private String followerIdName;
 
     /**
      * 0-添加关注， 1-取消关注

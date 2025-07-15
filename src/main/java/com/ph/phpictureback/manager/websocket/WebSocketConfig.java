@@ -20,11 +20,21 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Resource
     private WsHandshakeInterceptor wsHandshakeInterceptor;
 
+    @Resource
+    private WsHandshakeChatInterceptor wsHandshakeChatInterceptor;
+
+    @Resource
+    private ChatHandler chatHandler;
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        // websocket
+        // websocket  图片编辑
         registry.addHandler(pictureEditHandler, "/ws/picture/edit")
                 .addInterceptors(wsHandshakeInterceptor)
+                .setAllowedOrigins("*");
+        // websocket  聊天
+        registry.addHandler(chatHandler, "/ws/chat/send")
+                .addInterceptors(wsHandshakeChatInterceptor)
                 .setAllowedOrigins("*");
     }
 }

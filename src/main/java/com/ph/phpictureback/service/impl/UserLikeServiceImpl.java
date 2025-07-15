@@ -1,6 +1,7 @@
 package com.ph.phpictureback.service.impl;
 import java.util.List;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ph.phpictureback.model.dto.userlike.UserLikeQueryDto;
 import com.ph.phpictureback.model.entry.Forum;
@@ -278,6 +279,45 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike>
         return qw;
     }
 
+    @Override
+    public  Page<UserLikeVO>  listUserLikeVO(Page<UserLike> page) {
+        List<UserLike> records = page.getRecords();
+        Page<UserLikeVO> pageVO = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        if(CollUtil.isEmpty(records)){
+            return pageVO;
+        }
+        List<UserLikeVO> userLikeVOList = records.stream()
+                .map(UserLikeVO::objToVo)
+                .collect(Collectors.toList());
+
+        userLikeVOList.forEach(userLikeVO -> {
+            List<String> forumIdList = userLikeVO.getLikePost();
+            if(CollUtil.isNotEmpty(forumIdList)){
+                List<ForumVO> forumVOList = forumService.listByIds(forumIdList)
+                        .stream()
+                        .map(ForumVO::objToVo)
+                        .collect(Collectors.toList());
+                userLikeVO.setLikePostVO(forumVOList);
+            }
+
+            List<String> likePic = userLikeVO.getLikePic();
+            if(CollUtil.isNotEmpty(likePic)){
+                List<PictureVO> pictureVOList = pictureService.listByIds(likePic)
+                        .stream()
+                        .map(PictureVO::objToVo)
+                        .collect(Collectors.toList());
+                userLikeVO.setLikePicVO(pictureVOList);
+            }
+
+        });
+
+        pageVO.setRecords(userLikeVOList);
+
+        return pageVO;
+
+
+
+    }
 
 
 }

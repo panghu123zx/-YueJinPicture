@@ -43,4 +43,5 @@ public interface UserLikeService extends IService<UserLike> {
 
     QueryWrapper<UserLike> getQueryWrapper(UserLikeQueryDto userLikeQueryDto);
 
+    Page<UserLikeVO>  listUserLikeVO(Page<UserLike> page);
 }

@@ -11,9 +11,12 @@ import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.model.dto.follow.AddFollowDto;
 import com.ph.phpictureback.model.dto.follow.FollowQueryDto;
+import com.ph.phpictureback.model.entry.ChatPrompt;
 import com.ph.phpictureback.model.entry.Follow;
 import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.vo.ChatPromptVO;
 import com.ph.phpictureback.model.vo.FollowVO;
+import com.ph.phpictureback.service.ChatPromptService;
 import com.ph.phpictureback.service.FollowService;
 import com.ph.phpictureback.mapper.FollowMapper;
 import com.ph.phpictureback.service.UserService;
@@ -38,8 +41,16 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
     @Resource
     private UserService userService;
 
+    @Resource
+    private ChatPromptService chatPromptService;
+
     /**
      * 添加关注
+     * 逻辑拆解： isMutual 0-未互相关注 1-互相关注    followState 0-已关注 1-已取消关注
+     * 0 0  表示a关注了b
+     * 0 1  表示a取消关注了b
+     * 1 0  表示a和b互相关注了
+     * 1 1  表示b关注a，但是a取消了关注b
      *
      * @param addFollowDto
      * @param loginUser
@@ -47,27 +58,26 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
      */
     @Override
     public Boolean addFollow(AddFollowDto addFollowDto, User loginUser) {
+        //我id
         Long followerId = addFollowDto.getFollowerId();
+        //对方的id
         Long userId = addFollowDto.getUserId();
         ThrowUtils.throwIf(followerId == null || userId == null, ErrorCode.PARAMS_ERROR);
-        //0:添加关注 1-取消关注
+        //0-添加关注 1-取消关注
         Integer status = addFollowDto.getStatus();
         ThrowUtils.throwIf(status != 0 && status != 1, ErrorCode.PARAMS_ERROR);
-        /** 逻辑拆解： isMutual 0-未互相关注 1-互相关注    followState 0-已关注 1-已取消关注
-         *   0 0  表示a关注了b
-         *   0 1  表示a取消关注了b
-         *   1 0  表示a和b互相关注了
-         *   1 1  表示b关注a，但是a取消了关注b
-         */
+
 
         QueryWrapper<Follow> qw = new QueryWrapper<>();
-        qw.eq("followerId", followerId).eq("userId", userId);
+        qw.eq("followerId", followerId)
+                .eq("userId", userId);
         Follow follow = this.getOne(qw);
         //没有我关注你的这条记录
         if (follow == null) {
             //查看反向是否有记录
             QueryWrapper<Follow> qwReceive = new QueryWrapper<>();
-            qwReceive.eq("followerId", userId).eq("userId", followerId);
+            qwReceive.eq("followerId", userId)
+                    .eq("userId", followerId);
             Follow followReceive = this.getOne(qwReceive);
             //反向的不存在直接添加
             if (followReceive == null) {
@@ -76,6 +86,15 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
                     follow = new Follow();
                     follow.setFollowerId(followerId);
                     follow.setUserId(userId);
+                    //添加消息提示
+                    ChatPrompt chatPrompt = new ChatPrompt();
+                    chatPrompt.setChatType(0);
+                    chatPrompt.setUserId(followerId);
+                    chatPrompt.setTargetId(userId);
+                    chatPrompt.setTitle(addFollowDto.getUserIdName());
+                    chatPrompt.setReceiveTitle(addFollowDto.getFollowerIdName());
+                    // todo 加事务
+                    chatPromptService.save(chatPrompt);
                     return this.save(follow);
                 } else {//取消关注
                     throw new BusinessException(ErrorCode.OPERATION_ERROR, "没有关注记录");
@@ -85,28 +104,31 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
             // 反向的存在
             Integer isMutual = followReceive.getIsMutual();
             Integer followState = followReceive.getFollowState();
-            //反向的关注了我，但是我没有关注他                  对方取消关注了我
+            //反向的关注了我，但是我没有关注他              对方取消关注了我，我没有关注对方
             if ((isMutual == 0 && followState == 0) || (isMutual == 0 && followState == 1)) {
                 follow = new Follow();
                 follow.setId(followReceive.getId());
                 if (status == 0) {
+                    if (followState == 0)  updateChatPrompt(userId, followerId, 1);//修改好友的关系为好友
                     follow.setIsMutual(1);
                 } else {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR, "没有关注记录");
                 }
                 return this.updateById(follow);
             }
-            //我也关注了对方
+            //互相关注                                   对方取消关注了我，我关注了对方
             if ((isMutual == 1 && followState == 0) || (isMutual == 1 && followState == 1)) {
                 if (status == 0) {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR, "已经关注过了");
                 } else {
+                    if (followState == 0) updateChatPrompt(userId, followerId, 0); //互相关注的点击取消关注，关系应该变成私信关系
                     follow = new Follow();
                     follow.setId(followReceive.getId());
                     follow.setIsMutual(0);
                     return this.updateById(follow);
                 }
             }
+
         } else {
             //有我关注了你的这条记录
             Integer followState = follow.getFollowState();
@@ -115,23 +137,39 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
                 if (status == 0) {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR, "已经关注过了");
                 } else {
+                    if (isMutual == 1) updateChatPrompt(followerId, userId, 0); //好友关系变成私信关系
                     follow.setFollowState(1);
                     return this.updateById(follow);
                 }
-
             }
+
             if ((isMutual == 1 && followState == 1) || (isMutual == 0 && followState == 1)) {
                 if (status == 0) {
+                    if (isMutual == 1) updateChatPrompt(followerId, userId, 1);//此时由私信关系变成好友关系
                     follow.setFollowState(0);
                     return this.updateById(follow);
                 } else {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR, "没有关注记录");
                 }
-
             }
-
         }
         return true;
+    }
+
+    /**
+     * 更新用户之间的关系
+     *
+     * @param userId     用户id
+     * @param followerId 目标id
+     * @param status     修改的状态 0-私信 ，1-好友
+     */
+    private void updateChatPrompt(Long userId, Long followerId, int status) {
+        boolean update = chatPromptService.lambdaUpdate()
+                .eq(ChatPrompt::getUserId, userId)
+                .eq(ChatPrompt::getTargetId, followerId)
+                .set(ChatPrompt::getChatType, status)
+                .update(null);
+        ThrowUtils.throwIf(!update, ErrorCode.PARAMS_ERROR, "修改好友关系失败");
     }
 
     /**
@@ -270,6 +308,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
 
     /**
      * 获取关注/粉丝数
+     *
      * @param loginUser
      * @return
      */

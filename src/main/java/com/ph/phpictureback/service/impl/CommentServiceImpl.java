@@ -298,7 +298,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
         if(isCommentMy==0){
             qw.and(wrapper ->
                     wrapper.eq(ObjectUtil.isNotNull(fromId), "fromId", fromId)
-                            .or(sub -> sub.isNull("fromId").eq("targetUserId", targetUserId))
+                            .or(sub -> sub.isNull("fromId").eq("targetUserId", targetUserId)) //如果回复人为空，就恢复目标对象的创建人
             );
         }else if (isCommentMy==1){
             qw.eq(ObjectUtil.isNotNull(fromId), "fromId", fromId);

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ph.phpictureback.mapper.ChatPromptMapper">
+
+    <resultMap id="BaseResultMap" type="com.ph.phpictureback.model.entry.ChatPrompt">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="targetId" column="targetId" jdbcType="BIGINT"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="receiveTitle" column="receiveTitle" jdbcType="VARCHAR"/>
+            <result property="chatType" column="chatType" jdbcType="TINYINT"/>
+            <result property="unreadCount" column="unreadCount" jdbcType="INTEGER"/>
+            <result property="lastMessage" column="lastMessage" jdbcType="VARCHAR"/>
+            <result property="lastMessageTime" column="lastMessageTime" jdbcType="TIMESTAMP"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,targetId,
+        title,receiveTitle,chatType,
+        unreadCount,lastMessage,lastMessageTime,
+        createTime,updateTime,isDelete
+    </sql>
+</mapper>
