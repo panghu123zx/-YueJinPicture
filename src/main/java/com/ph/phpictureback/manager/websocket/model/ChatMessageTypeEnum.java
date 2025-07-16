@@ -8,8 +8,9 @@ public enum ChatMessageTypeEnum {
     JOIN("加入聊天", "JOIN"),
     EXIT("离开聊天", "EXIT"),
     HISTORY("历史消息", "HISTORY"),
+    MOREHISTORY("更多历史消息", "HISTORY"),
     ERROR("错误", "ERROR"),
-    ONLINEUSER("在线用户", "ONELINEUSER");
+    ONLINEUSER("在线用户", "ONLINEUSER");
 
 
 

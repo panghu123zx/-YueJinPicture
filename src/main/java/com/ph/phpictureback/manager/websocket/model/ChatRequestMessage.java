@@ -19,10 +19,13 @@ public class ChatRequestMessage {
     private String content;
 
     /**
-     * 消息的类型0-文本，1-图片
+     * 消息的类型0-图片，1-文件 ,null为文本
      */
     private Integer messageType;
 
+    /**
+     * 消息类型的目标ID
+     */
     private Long targetId;
 
     /**
@@ -34,6 +37,4 @@ public class ChatRequestMessage {
      * 消息的接收者
      */
     private Long receiverId;
-    //todo
-    private Long chatId;
 }

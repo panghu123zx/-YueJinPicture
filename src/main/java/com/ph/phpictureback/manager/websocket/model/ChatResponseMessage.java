@@ -2,6 +2,7 @@ package com.ph.phpictureback.manager.websocket.model;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.model.entry.ChatMessage;
+import com.ph.phpictureback.model.vo.ChatMessageVO;
 import com.ph.phpictureback.model.vo.UserVO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,5 +22,5 @@ public class ChatResponseMessage {
     private UserVO user; // 发送用户
     private Date timestamp; // 发送时间
     private List<UserVO> onlineUsers; // 在线用户列表（仅用于ONLINE_USER类型）
-    private Page<ChatMessage> historyMessage;  //历史消息
+    private Page<ChatMessageVO> historyMessage;  //历史消息
 }

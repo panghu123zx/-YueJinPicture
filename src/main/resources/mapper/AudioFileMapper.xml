@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ph.phpictureback.mapper.AudioFileMapper">
+
+    <resultMap id="BaseResultMap" type="com.ph.phpictureback.model.entry.AudioFile">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="fileUrl" column="fileUrl" jdbcType="VARCHAR"/>
+            <result property="fileType" column="fileType" jdbcType="TINYINT"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="size" column="size" jdbcType="BIGINT"/>
+            <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
+            <result property="md5" column="md5" jdbcType="VARCHAR"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,fileUrl,
+        fileType,title,size,
+        introduction,md5,createTime,
+        updateTime,isDelete
+    </sql>
+</mapper>

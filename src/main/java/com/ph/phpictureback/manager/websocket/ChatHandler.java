@@ -15,9 +15,12 @@ import com.ph.phpictureback.manager.websocket.model.ChatMessageTypeEnum;
 import com.ph.phpictureback.manager.websocket.model.ChatRequestMessage;
 import com.ph.phpictureback.manager.websocket.model.ChatResponseMessage;
 import com.ph.phpictureback.model.entry.ChatMessage;
+import com.ph.phpictureback.model.entry.ChatPrompt;
 import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.vo.ChatMessageVO;
 import com.ph.phpictureback.model.vo.UserVO;
 import com.ph.phpictureback.service.ChatMessageService;
+import com.ph.phpictureback.service.ChatPromptService;
 import com.ph.phpictureback.service.UserService;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Lazy;
@@ -45,6 +48,8 @@ public class ChatHandler extends TextWebSocketHandler {
 
     @Resource
     private ChatMessageService chatMessageService;
+    @Resource
+    private ChatPromptService chatPromptService;
 
     @Resource
     @Lazy
@@ -89,7 +94,8 @@ public class ChatHandler extends TextWebSocketHandler {
         // 解析消息
         ChatRequestMessage requestMessage = JSONUtil.toBean(message.getPayload(), ChatRequestMessage.class);
         String content = requestMessage.getContent();
-        if (StrUtil.isBlank(content)) {
+        Integer messageType = requestMessage.getMessageType();
+        if (StrUtil.isBlank(content) && messageType==null) {
             return;
         }
         // 交给Disruptor处理（异步化）
@@ -133,7 +139,7 @@ public class ChatHandler extends TextWebSocketHandler {
      */
     public void sendHistoryMessages(WebSocketSession session, Long chatId) throws IOException {
         // 获取历史消息（这里假设获取最近20条）
-        Page<ChatMessage> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
+        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
         //处理历史消息
         ChatResponseMessage response = new ChatResponseMessage();
         response.setType(ChatMessageTypeEnum.HISTORY.getValue());
@@ -143,6 +149,22 @@ public class ChatHandler extends TextWebSocketHandler {
 
         session.sendMessage(new TextMessage(serializeMessage(response)));
 
+    }
+
+    /**
+     * 发送更多历史消息给新连接用户
+     */
+    public void sendMoreHistoryMessages(WebSocketSession session, Long chatId) throws IOException {
+        // 获取历史消息（这里假设获取最近20条）
+        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 50L);
+        //处理历史消息
+        ChatResponseMessage response = new ChatResponseMessage();
+        response.setType(ChatMessageTypeEnum.HISTORY.getValue());
+        response.setContent("历史消息");
+        response.setOnlineUsers(null);
+        response.setHistoryMessage(historyMessages);
+
+        session.sendMessage(new TextMessage(serializeMessage(response)));
     }
 
     /**
@@ -175,17 +197,38 @@ public class ChatHandler extends TextWebSocketHandler {
         // 保存消息到数据库
         ChatMessage chatMessage = new ChatMessage();
         chatMessage.setReplayId(request.getReplayId());
-        chatMessage.setSendId(user.getId());
-        chatMessage.setReceiveId(request.getReceiverId());
+        Long userId = user.getId();
+        chatMessage.setSendId(userId);
+        Long receiverId = request.getReceiverId();
+        chatMessage.setReceiveId(receiverId);
         chatMessage.setContent(request.getContent());
         if(request.getMessageType()!=null){
             chatMessage.setMessageType(request.getMessageType());
             chatMessage.setTargetId(request.getTargetId());
         }
+        //设置会话ID
+        String sessionId;
+        if(userId<receiverId){
+            sessionId=String.format("user%d_user%d", userId, receiverId);
+        }else{
+            sessionId=String.format("user%d_user%d", receiverId, userId);
+        }
         chatMessage.setChatPromptId(chatId);
+        chatMessage.setSessionId(sessionId);
         boolean save = chatMessageService.save(chatMessage);
         ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR,"消息发送失败");
-        Page<ChatMessage> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
+
+        //更新聊天室的信息
+        ChatPrompt chatPrompt = new ChatPrompt();
+        chatPrompt.setId(chatId);
+        chatPrompt.setLastMessage(request.getContent());
+        chatPrompt.setLastMessageTime(new Date());
+        boolean update = chatPromptService.updateById(chatPrompt);
+        ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR,"聊天室消息更新失败失败");
+        //todo 未读消息数修改
+
+        //发送历史消息
+        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
         ChatResponseMessage chatResponseMessage = new ChatResponseMessage();
         chatResponseMessage.setId(chatMessage.getId());
         chatResponseMessage.setType(ChatMessageTypeEnum.SEND.getValue());

@@ -41,8 +41,8 @@ public class ChatEventWorkHandler implements WorkHandler<ChatEvent> {
             case SEND:
                 chatHandler.handleChatMessage(chatRequestMessage, session, user, chatId);
                 break;
-            case HISTORY:
-                chatHandler.sendHistoryMessages(session, chatId);
+            case MOREHISTORY:
+                chatHandler.sendMoreHistoryMessages(session, chatId);
                 break;
             case ONLINEUSER:
                 chatHandler.broadcastOnlineUsers(chatId);

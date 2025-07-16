@@ -70,7 +70,7 @@ public class ChatMessage implements Serializable {
     private Date createTime;
 
     /**
-     * 更新时间
+     * 更新时间，todo 删除
      */
     private Date updateTime;
 

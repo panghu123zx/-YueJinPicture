@@ -110,8 +110,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      */
     @Override
     public PictureVO uploadPicture(Object inputSource, PictureUploadDto pictureUploadDto, User loginuser) {
-        ThrowUtils.throwIf(loginuser == null, ErrorCode.NO_AUTH_ERROR, "无权限");
-
         Boolean admin = userService.isAdmin(loginuser);
         //判断是新增还是更新图片
         Long pictureId = pictureUploadDto.getId();

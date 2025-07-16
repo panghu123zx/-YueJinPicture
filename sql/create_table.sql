@@ -263,7 +263,7 @@ create table chat_message
     sendId       bigint                               not null comment '聊天发送者的id',
     receiveId    bigint                               not null comment '聊天接收者的id',
     content      text                                 null comment '消息内容',
-    messageType  tinyint(1) default '0'               null comment '消息类型 0-图片，1-文件',
+    messageType  tinyint    default '0'               null comment '消息类型 0-图片，1-文件',
     targetId     bigint                               null comment '目标的id',
     isRead       tinyint(1) default 0                 null comment '是否已读， 0-未读，1-已读',
     chatPromptId bigint                               not null comment '消息提示的id',
@@ -295,8 +295,28 @@ create table chat_prompt
     createTime      datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime      datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete        tinyint(1) default 0                 not null comment '是否删除'
-) comment '消息提示表' collate = utf8mb4_unicode_ci  row_format = DYNAMIC;
+) comment '消息提示表' collate = utf8mb4_unicode_ci
+                       row_format = DYNAMIC;
 create index idx_userId on chat_prompt (userId);
 create index idx_targetId on chat_prompt (targetId);
 create index idx_title on chat_prompt (title);
 create index idx_receiveTitle on chat_prompt (receiveTitle);
+
+
+-- 视频文件表
+create table audio_file
+(
+    id           bigint auto_increment comment 'id' primary key,
+    userId       bigint                               not null comment '用户id',
+    fileUrl      varchar(512)                         null comment '存放地址',
+    fileType     tinyint(1) default '0'               null comment '文件类型 0-图片，1-视频，2-音频',
+    title        varchar(128)                         null comment '标题',
+    size         bigint                               null comment '大小',
+    introduction varchar(128)                         null comment '简介',
+    md5          varchar(32)                          null comment '文件的md5',
+    createTime   datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime   datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete     tinyint(1) default 0                 not null comment '是否删除'
+) comment '视频文件表' collate = utf8mb4_unicode_ci
+                       row_format = DYNAMIC;
+create index idx_userId on audio_file (userId);
