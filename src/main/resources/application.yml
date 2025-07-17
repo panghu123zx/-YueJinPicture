@@ -10,12 +10,15 @@ server:
 spring:
   profiles:
     active: local
-  application:
-    name: ph-picture-back
-    #指定上传体积
+  #指定上传体积
   servlet:
     multipart:
-      max-file-size: 10MB
+      max-file-size: 200MB
+      max-request-size: 200MB  # 建议添加整个请求的大小限制
+
+  application:
+    name: ph-picture-back
+
   session:
     store-type: redis
     timeout: 2592000
@@ -31,6 +34,11 @@ spring:
     port: 6379
     database: 0
 
+  minio:
+    access-key: ${phoj.minio.accessKey}
+    secret-key: ${phoj.minio.secretKey}
+    url: http://127.0.0.1:9005
+    bucket-name: phpicture
 
 mybatis-plus:
   configuration:

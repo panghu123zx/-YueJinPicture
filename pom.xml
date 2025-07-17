@@ -144,6 +144,12 @@
             <artifactId>redisson</artifactId>
             <version>3.37.0</version>
         </dependency>
+<!--        minio-->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.2.1</version>
+        </dependency>
 
 
 

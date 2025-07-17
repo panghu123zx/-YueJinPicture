@@ -10,6 +10,7 @@ import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.manager.fileUpload.FilePictureUpload;
+import com.ph.phpictureback.manager.minio.MinioManage;
 import com.ph.phpictureback.model.dto.audioFile.AudioFileAddDto;
 import com.ph.phpictureback.model.dto.audioFile.AudioFileQueryDto;
 import com.ph.phpictureback.model.dto.audioFile.AudioFileUpdateDto;
@@ -46,6 +47,9 @@ public class AudioFileServiceImpl extends ServiceImpl<AudioFileMapper, AudioFile
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private MinioManage minioManage;
     /**
      * 新增文件
      * @param multipartFile
@@ -57,7 +61,7 @@ public class AudioFileServiceImpl extends ServiceImpl<AudioFileMapper, AudioFile
     public Long addAudioFile(MultipartFile multipartFile, AudioFileAddDto audioFileAddDto, User loginUser) {
         Long userId = loginUser.getId();
         //上传路径
-        String uploadPath=String.format("/audio/%s",userId);
+        String uploadPath=String.format("audio/%s",userId);
         //上传文件
         Integer fileType = audioFileAddDto.getFileType();
         AudioFile audioFile = new AudioFile();
@@ -70,15 +74,18 @@ public class AudioFileServiceImpl extends ServiceImpl<AudioFileMapper, AudioFile
             audioFile.setFileUrl(uploadPicture.getUrl());
             audioFile.setSize(uploadPicture.getPicSize());
             audioFile.setTitle(uploadPicture.getPicName());
-            boolean save = this.save(audioFile);
-            ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR, "文件上传失败");
-            return audioFile.getId();
-        }else if (fileType.equals(1)){
-            //上传文件
-        }else{
-            //上传音频
+        }else {
+            //上传文件 / 音频
+            //todo 音频的时长后端没法确定
+            String url = minioManage.upload(multipartFile, uploadPath);
+            long fileSize = multipartFile.getSize();
+            audioFile.setFileUrl(url);
+            audioFile.setSize(fileSize);
+            audioFile.setTitle(multipartFile.getOriginalFilename());
         }
-        return null;
+        boolean save = this.save(audioFile);
+        ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR, "文件上传失败");
+        return audioFile.getId();
     }
 
     /**
