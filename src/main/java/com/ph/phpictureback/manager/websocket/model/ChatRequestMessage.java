@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ChatRequestMessage {
     /**
-     * 获取的类型：loadMore：加载更多，onlineUser：在线用户
+     * 获取的类型
      */
     private String type;
     /**

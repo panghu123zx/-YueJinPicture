@@ -68,6 +68,8 @@ public class ChatMessageVO implements Serializable {
     //todo 后期有需要修改成 AudioFileVO
     private String url;
 
+    private String replayContent;
+
     /**
      * 包装类转对象
      *

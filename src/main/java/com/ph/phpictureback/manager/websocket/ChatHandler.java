@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
+import com.ph.phpictureback.manager.ai.AiProducer;
 import com.ph.phpictureback.manager.websocket.disruptor.ChatEventProducer;
 import com.ph.phpictureback.manager.websocket.model.ChatMessageTypeEnum;
 import com.ph.phpictureback.manager.websocket.model.ChatRequestMessage;
@@ -32,6 +33,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,9 @@ public class ChatHandler extends TextWebSocketHandler {
     @Resource
     @Lazy
     private ChatEventProducer chatEventProducer;
+
+    @Resource
+    private AiProducer aiProducer;
 
     // 房间ID -> 该房间内的所有会话
     private final Map<Long, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
@@ -95,9 +100,15 @@ public class ChatHandler extends TextWebSocketHandler {
         ChatRequestMessage requestMessage = JSONUtil.toBean(message.getPayload(), ChatRequestMessage.class);
         String content = requestMessage.getContent();
         Integer messageType = requestMessage.getMessageType();
-        if (StrUtil.isBlank(content) && messageType==null) {
-            return;
+        String type = requestMessage.getType();
+        //获取历史消息,不应该检查这些
+        if(!type.equals(ChatMessageTypeEnum.HISTORY.getValue()) && !type.equals(ChatMessageTypeEnum.MOREHISTORY.getValue())){
+            //消息内容为空，并且消息类型为空时
+            if ( StrUtil.isBlank(content) && messageType==null) {
+                return;
+            }
         }
+
         // 交给Disruptor处理（异步化）
         chatEventProducer.publishEvent(requestMessage, session, user, chatId);
     }
@@ -151,6 +162,7 @@ public class ChatHandler extends TextWebSocketHandler {
 
     }
 
+
     /**
      * 发送更多历史消息给新连接用户
      */
@@ -166,6 +178,7 @@ public class ChatHandler extends TextWebSocketHandler {
 
         session.sendMessage(new TextMessage(serializeMessage(response)));
     }
+
 
     /**
      * 广播在线用户列表
@@ -217,6 +230,11 @@ public class ChatHandler extends TextWebSocketHandler {
         chatMessage.setSessionId(sessionId);
         boolean save = chatMessageService.save(chatMessage);
         ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR,"消息发送失败");
+//        todo 数据库创建ai小助手为 1 号，如果receiveId为1时，就表示和ai聊天
+        if(receiverId==11){
+            //创建消息队列的消息
+            aiProducer.sendAiMessage(String.valueOf(chatMessage.getId()));
+        }
 
         //更新聊天室的信息
         ChatPrompt chatPrompt = new ChatPrompt();
@@ -226,7 +244,6 @@ public class ChatHandler extends TextWebSocketHandler {
         boolean update = chatPromptService.updateById(chatPrompt);
         ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR,"聊天室消息更新失败失败");
         //todo 未读消息数修改
-
         //发送历史消息
         Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
         ChatResponseMessage chatResponseMessage = new ChatResponseMessage();
@@ -245,7 +262,7 @@ public class ChatHandler extends TextWebSocketHandler {
     /**
      * 广播消息到房间（可排除特定会话）
      */
-    private void broadcastToRoom(Long chatId, ChatResponseMessage message, WebSocketSession excludeSession) throws IOException {
+    public void broadcastToRoom(Long chatId, ChatResponseMessage message, WebSocketSession excludeSession) throws IOException {
         Set<WebSocketSession> sessions = roomSessions.get(chatId);
         if (CollUtil.isEmpty(sessions)) {
             return;

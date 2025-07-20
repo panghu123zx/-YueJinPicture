@@ -39,6 +39,12 @@ spring:
     secret-key: ${phoj.minio.secretKey}
     url: http://127.0.0.1:9005
     bucket-name: phpicture
+  rabbitmq:
+    host: localhost
+    port: 5672
+    password: ${phoj.rabbitmq.password}
+    username: ${phoj.rabbitmq.username}
+
 
 mybatis-plus:
   configuration:
@@ -76,3 +82,9 @@ cos:
 aliyun:
   apiKey: ${phoj.aliyun.apiKey}
 
+
+xun-fei:
+  client:
+    appId: ${phoj.xunfei.appId}
+    apiSecret: ${phoj.xunfei.apiSecret}
+    apiKey: ${phoj.xunfei.apiKey}

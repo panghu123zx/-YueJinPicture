@@ -67,7 +67,6 @@ public class WsHandshakeChatInterceptor implements HandshakeInterceptor {
                 log.error("用户不在聊天室，拒绝握手");
                 return false;
             }
-            //todo 判断登入用户是否在聊天室内部
             attributes.put("user", loginUser);
             attributes.put("userId", loginUser.getId());
             attributes.put("chatId", Long.valueOf(chatId));
