@@ -29,6 +29,7 @@ public class ChatMessageController {
     private ChatMessageService chatMessageService;
 
     /**
+     *数据库新增测回字段，方便与前端展示测回信息
      * 撤回消息
      * @param deleteRequest
      * @param request

@@ -36,7 +36,7 @@ public class FilePictureUpload extends DownloadFileTemplate {
         //校验大小
         long fileSize = (multipartFile).getSize();
         long ONE_M = 1024 * 1024L;
-        //todo 图片的最大上传不能超过10MB
+        //图片的最大上传不能超过10MB
         ThrowUtils.throwIf(fileSize > 10 * ONE_M, ErrorCode.PARAMS_ERROR, "图片过大");
         //校验文件后缀
         String fileSuffix = FileUtil.getSuffix((multipartFile).getOriginalFilename());

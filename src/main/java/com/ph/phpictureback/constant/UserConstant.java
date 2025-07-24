@@ -15,4 +15,9 @@ public interface UserConstant {
      * 管理员
      */
     String ADMIN="admin";
+
+    /**
+     * 邮箱验证码
+     */
+    String CODE="register:code";
 }

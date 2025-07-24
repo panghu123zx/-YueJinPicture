@@ -62,12 +62,21 @@ public class ChatMessageVO implements Serializable {
     private Long chatPromptId;
 
     /**
+     * 是否撤回 0-未撤回，1-已撤回
+     */
+    private Integer isRecalled;
+
+    /**
      * 创建时间
      */
     private Date createTime;
-    //todo 后期有需要修改成 AudioFileVO
+    /**
+     * 文件地址
+     */
     private String url;
-
+    /**
+     * 消息回复内容
+     */
     private String replayContent;
 
     /**

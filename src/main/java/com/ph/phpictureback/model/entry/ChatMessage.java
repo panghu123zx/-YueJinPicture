@@ -70,9 +70,9 @@ public class ChatMessage implements Serializable {
     private Date createTime;
 
     /**
-     * 更新时间，todo 删除
+     * 是否撤回 0-未撤回，1-已撤回
      */
-    private Date updateTime;
+    private Integer isRecalled;
 
     /**
      * 是否删除

@@ -150,7 +150,7 @@ public class ChatHandler extends TextWebSocketHandler {
      */
     public void sendHistoryMessages(WebSocketSession session, Long chatId) throws IOException {
         // 获取历史消息（这里假设获取最近20条）
-        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
+        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 50L);
         //处理历史消息
         ChatResponseMessage response = new ChatResponseMessage();
         response.setType(ChatMessageTypeEnum.HISTORY.getValue());
@@ -167,8 +167,8 @@ public class ChatHandler extends TextWebSocketHandler {
      * 发送更多历史消息给新连接用户
      */
     public void sendMoreHistoryMessages(WebSocketSession session, Long chatId) throws IOException {
-        // 获取历史消息（这里假设获取最近20条）
-        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 50L);
+        // 获取历史消息（这里假设获取最近100条）
+        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 100L);
         //处理历史消息
         ChatResponseMessage response = new ChatResponseMessage();
         response.setType(ChatMessageTypeEnum.HISTORY.getValue());
@@ -228,8 +228,11 @@ public class ChatHandler extends TextWebSocketHandler {
         }
         chatMessage.setChatPromptId(chatId);
         chatMessage.setSessionId(sessionId);
+        chatMessage.setCreateTime(new Date());
         boolean save = chatMessageService.save(chatMessage);
         ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR,"消息发送失败");
+        //更新缓存
+        chatMessageService.updateChatCache(chatId,chatMessage);
 //        todo 数据库创建ai小助手为 1 号，如果receiveId为1时，就表示和ai聊天
         if(receiverId==11){
             //创建消息队列的消息
@@ -245,7 +248,7 @@ public class ChatHandler extends TextWebSocketHandler {
         ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR,"聊天室消息更新失败失败");
         //todo 未读消息数修改
         //发送历史消息
-        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
+        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 50L);
         ChatResponseMessage chatResponseMessage = new ChatResponseMessage();
         chatResponseMessage.setId(chatMessage.getId());
         chatResponseMessage.setType(ChatMessageTypeEnum.SEND.getValue());

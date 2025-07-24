@@ -22,15 +22,20 @@ import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.manager.LimitManager;
+import com.ph.phpictureback.manager.ai.aiPicture.AiPicture;
+import com.ph.phpictureback.manager.ai.aiPicture.AiPictureProducer;
 import com.ph.phpictureback.manager.auth.StpKit;
 import com.ph.phpictureback.manager.auth.annotation.SaSpaceCheckPermission;
 import com.ph.phpictureback.manager.auth.model.SpaceUserPermissionConstant;
 import com.ph.phpictureback.model.dto.picture.*;
 import com.ph.phpictureback.model.entry.Picture;
+import com.ph.phpictureback.model.entry.Space;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.enums.ReviewStatusEnum;
+import com.ph.phpictureback.model.enums.SpaceTypeEnum;
 import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.service.PictureService;
+import com.ph.phpictureback.service.SpaceService;
 import com.ph.phpictureback.service.UserService;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -40,6 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +65,12 @@ public class PictureController {
 
     @Resource
     private LimitManager limitManager;
+
+    @Resource
+    private SpaceService spaceService;
+
+    @Resource
+    private AiPictureProducer aiPictureProducer;
 
     @Resource
     private AliyunApi aliyunApi;
@@ -106,6 +118,39 @@ public class PictureController {
         User loginUser = userService.getLoginUser(request);
         PictureVO pictureVO = pictureService.uploadPicture(pictureUploadDto.getFileUrl(), pictureUploadDto, loginUser);
         return ResultUtils.success(pictureVO);
+    }
+
+    /**
+     * ai创建图片
+     * @param pictureAiDto
+     * @return
+     */
+    @PostMapping("/aipicture")
+    @AuthCheck(mustRole = UserConstant.ADMIN)
+    public BaseResponse<PictureVO> uploadAiPicture(@RequestBody PictureAiDto pictureAiDto,
+                                                   HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureAiDto == null, ErrorCode.PARAMS_ERROR);
+        String content = pictureAiDto.getContent();
+        User loginUser = userService.getLoginUser(request);
+        if(StrUtil.isBlank(content)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "内容不能为空");
+        }
+        Picture picture = new Picture();
+        picture.setName(pictureAiDto.getName());
+        picture.setUrl("null");
+        picture.setUserId(loginUser.getId());
+        //获取当前登入用户的空间
+        Space one = spaceService.lambdaQuery()
+                .select(Space::getId)
+                .eq(Space::getUserId, loginUser.getId())
+                .eq(Space::getSpaceType, SpaceTypeEnum.PRIVATE.getValue())
+                .one();
+        ThrowUtils.throwIf(one == null, ErrorCode.PARAMS_ERROR, "用户没有空间，无法创建ai图片");
+        picture.setSpaceId(one.getId());
+        boolean save = pictureService.save(picture);
+        ThrowUtils.throwIf(!save, ErrorCode.PARAMS_ERROR, "创建失败");
+        aiPictureProducer.sendAiMessage(picture.getId().toString());
+        return ResultUtils.success(pictureService.getPictureVo(picture.getId(), loginUser));
     }
 
 

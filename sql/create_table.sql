@@ -20,6 +20,8 @@ create table if not exists user
     INDEX idx_userName (userName)
 ) comment '用户' collate = utf8mb4_unicode_ci;
 
+alter table user
+    add column email varchar(256) null comment '邮箱';
 
 -- 图片表
 create table if not exists picture
@@ -268,7 +270,6 @@ create table chat_message
     isRead       tinyint(1) default 0                 null comment '是否已读， 0-未读，1-已读',
     chatPromptId bigint                               not null comment '消息提示的id',
     createTime   datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime   datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete     tinyint(1) default 0                 not null comment '是否删除'
 )
     comment '用户聊天表' collate = utf8mb4_unicode_ci;
@@ -278,6 +279,10 @@ create index idx_sessionId on chat_message (sessionId);
 create index idx_replayId on chat_message (replayId);
 create index idx_targetId on chat_message (targetId);
 create index idx_chatPromptId on chat_message (chatPromptId);
+
+alter table chat_message
+    add isRecalled tinyint(1) default 0 not null comment '是否撤回， 0-未撤回，1-已撤回';
+
 
 
 -- 消息的提示

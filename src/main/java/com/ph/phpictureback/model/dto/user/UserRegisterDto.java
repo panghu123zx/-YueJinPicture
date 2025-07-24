@@ -7,9 +7,9 @@ import java.io.Serializable;
 @Data
 public class UserRegisterDto implements Serializable {
     /**
-     * 账号
+     * 邮箱号
      */
-    private String userAccount;
+    private String email;
 
     /**
      * 密码
@@ -20,4 +20,9 @@ public class UserRegisterDto implements Serializable {
      * 确认密码
      */
     private String checkPassword;
+
+    /**
+     * 验证码
+     */
+    private String code;
 }

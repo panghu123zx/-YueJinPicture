@@ -10,6 +10,7 @@ import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.manager.auth.StpKit;
+import com.ph.phpictureback.mapper.UserMapper;
 import com.ph.phpictureback.model.dto.user.UserChangePwdDto;
 import com.ph.phpictureback.model.dto.user.UserEditDto;
 import com.ph.phpictureback.model.dto.user.UserQueryDto;
@@ -18,12 +19,13 @@ import com.ph.phpictureback.model.enums.UserRoleEnum;
 import com.ph.phpictureback.model.vo.LoginUserVo;
 import com.ph.phpictureback.model.vo.UserVO;
 import com.ph.phpictureback.service.UserService;
-import com.ph.phpictureback.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,22 +41,25 @@ import java.util.stream.Collectors;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
+    @Resource
+    private RedisTemplate redisTemplate;
     /**
      * 用户注册
      *
-     * @param userAccount
+     * @param email
      * @param userPassword
      * @param checkPassword
+     * @param code
      * @return
      */
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public long userRegister(String email, String userPassword, String checkPassword,String code) {
         //1.校验参数
-        if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
+        if (StrUtil.hasBlank(email, userPassword, checkPassword,code)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
-        if (userAccount.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名长度不能小于4");
+        if (email.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "邮箱长度不能小于4");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度不能小于8");
@@ -62,18 +67,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次参数不一致");
         }
+        if(code.length()!=6){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码长度不正确");
+        }
+        //redis中获取验证码
+        String emailCode = (String) redisTemplate.opsForValue().get(UserConstant.CODE + email);
+        if(StrUtil.isBlank(emailCode) ||!emailCode.equals(code)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
+        }
         //2.检查是否重复
         QueryWrapper<User> qw = new QueryWrapper<>();
-        qw.eq("userAccount", userAccount);
+        qw.eq("email", email);
         Long count = this.baseMapper.selectCount(qw);
         ThrowUtils.throwIf(count > 0, ErrorCode.PARAMS_ERROR, "数据重复");
         //3.加密
         String encipherPassword = getEncipher(userPassword);
         //4.添加数据
+        String emailPrefix = email.split("@")[0];
         User user = new User();
-        user.setUserAccount(userAccount);
+        user.setUserAccount(emailPrefix);
+        user.setEmail(email);
         user.setUserPassword(encipherPassword);
-        user.setUserName(userAccount);
+        user.setUserName(emailPrefix);
         user.setUserAvatar("https://img2.baidu.com/it/u=3887984625,2343006467&fm=253&fmt=auto&app=138&f=JPEG?w=199&h=199");
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean save = this.save(user);
@@ -240,6 +255,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String userName = queryDto.getUserName();
         String userAccount = queryDto.getUserAccount();
         String userProfile = queryDto.getUserProfile();
+        String email = queryDto.getEmail();
         String userRole = queryDto.getUserRole();
         String sortField = queryDto.getSortField();
         String sortOrder = queryDto.getSortOrder();
@@ -248,6 +264,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.eq(StrUtil.isNotBlank(userRole), "userRole", userRole);
         queryWrapper.like(StrUtil.isNotBlank(userAccount), "userAccount", userAccount);
         queryWrapper.like(StrUtil.isNotBlank(userName), "userName", userName);
+        queryWrapper.like(StrUtil.isNotBlank(email), "email", email);
         queryWrapper.like(StrUtil.isNotBlank(userProfile), "userProfile", userProfile);
         queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
 

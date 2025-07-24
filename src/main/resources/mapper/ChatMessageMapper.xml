@@ -14,9 +14,9 @@
             <result property="messageType" column="messageType" jdbcType="TINYINT"/>
             <result property="targetId" column="targetId" jdbcType="BIGINT"/>
             <result property="isRead" column="isRead" jdbcType="TINYINT"/>
+            <result property="isRecalled" column="isRecalled" jdbcType="TINYINT"/>
             <result property="chatPromptId" column="chatPromptId" jdbcType="BIGINT"/>
             <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
-            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
             <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
     </resultMap>
 
@@ -24,7 +24,7 @@
         id,sessionId,replayId,
         sendId,receiveId,content,
         messageType,targetId,isRead,
-        chatPromptId,createTime,updateTime,
+        chatPromptId,createTime,isRecalled,
         isDelete
     </sql>
 </mapper>

@@ -24,6 +24,11 @@ public class UserQueryDto extends PageRequest implements Serializable {
     private String userName;
 
     /**
+     * 邮箱
+     */
+    private String email;
+
+    /**
      * 账号
      */
     private String userAccount;

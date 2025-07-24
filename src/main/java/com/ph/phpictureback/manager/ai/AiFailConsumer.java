@@ -12,8 +12,10 @@ import com.ph.phpictureback.manager.websocket.ChatHandler;
 import com.ph.phpictureback.manager.websocket.model.ChatMessageTypeEnum;
 import com.ph.phpictureback.manager.websocket.model.ChatResponseMessage;
 import com.ph.phpictureback.model.entry.ChatMessage;
+import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.model.vo.ChatMessageVO;
 import com.ph.phpictureback.service.ChatMessageService;
+import com.ph.phpictureback.service.PictureService;
 import com.rabbitmq.client.Channel;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,9 @@ public class AiFailConsumer {
     private ChatMessageService chatMessageService;
     @Resource
     private ChatHandler chatHandler;
+
+    @Resource
+    private PictureService pictureService;
     /**
      * 监听死信队列
      *
@@ -53,31 +58,37 @@ public class AiFailConsumer {
         //消息是发送者消息的id
         Long id = Long.valueOf(message);
         ChatMessage chatMessage = chatMessageService.getById(id);
-
-        Long chatId = chatMessage.getChatPromptId();
-        ChatMessage aiMessage = new ChatMessage();
-        aiMessage.setContent("ai对话发生了错误");
-        aiMessage.setSendId(chatMessage.getReceiveId());
-        aiMessage.setReplayId(id);
-        aiMessage.setReceiveId(chatMessage.getSendId());
-        aiMessage.setChatPromptId(chatId);
-        boolean save = chatMessageService.save(aiMessage);
-        if(!save){
-            channel.basicNack(deliveryTag,false,false);
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "消息保存失败");
-        }
-        //重新广播消息
-        Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
-        ChatResponseMessage chatResponseMessage = new ChatResponseMessage();
-        chatResponseMessage.setId(aiMessage.getId());
-        chatResponseMessage.setType(ChatMessageTypeEnum.SEND.getValue());
-        chatResponseMessage.setContent(aiMessage.getContent());
-        chatResponseMessage.setTimestamp(aiMessage.getCreateTime());
+        //处理聊天的信息
+        if(chatMessage!=null){
+            Long chatId = chatMessage.getChatPromptId();
+            ChatMessage aiMessage = new ChatMessage();
+            aiMessage.setContent("ai对话发生了错误");
+            aiMessage.setSendId(chatMessage.getReceiveId());
+            aiMessage.setReplayId(id);
+            aiMessage.setReceiveId(chatMessage.getSendId());
+            aiMessage.setChatPromptId(chatId);
+            boolean save = chatMessageService.save(aiMessage);
+            if(!save){
+                channel.basicNack(deliveryTag,false,false);
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "消息保存失败");
+            }
+            //重新广播消息
+            Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
+            ChatResponseMessage chatResponseMessage = new ChatResponseMessage();
+            chatResponseMessage.setId(aiMessage.getId());
+            chatResponseMessage.setType(ChatMessageTypeEnum.SEND.getValue());
+            chatResponseMessage.setContent(aiMessage.getContent());
+            chatResponseMessage.setTimestamp(aiMessage.getCreateTime());
 //        chatResponseMessage.setUser(userService.getUserVo(user));
-        chatResponseMessage.setHistoryMessage(historyMessages);
-
-        chatHandler.broadcastToRoom(chatId, chatResponseMessage, null);
-
+            chatResponseMessage.setHistoryMessage(historyMessages);
+            chatHandler.broadcastToRoom(chatId, chatResponseMessage, null);
+        }else{
+            //处理图片失败的信息
+            boolean update = pictureService.removeById(id);
+            if(!update){
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "图片信息失败");
+            }
+        }
         channel.basicAck(deliveryTag,false);
     }
 }

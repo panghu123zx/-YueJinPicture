@@ -2,6 +2,7 @@ package com.ph.phpictureback.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ph.phpictureback.annotation.AuthCheck;
+import com.ph.phpictureback.api.MailConfig;
 import com.ph.phpictureback.common.BaseResponse;
 import com.ph.phpictureback.common.DeleteRequest;
 import com.ph.phpictureback.common.ResultUtils;
@@ -14,21 +15,55 @@ import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.vo.LoginUserVo;
 import com.ph.phpictureback.model.vo.UserVO;
 import com.ph.phpictureback.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.security.SecureRandom;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 健康检查
  */
 @RestController
 @RequestMapping("/user")
+@Slf4j
 public class UserController {
     @Resource
     private UserService userService;
+
+    @Resource
+    private MailConfig mailConfig;
+
+    @Resource
+    private RedisTemplate redisTemplate;
+
+    /**
+     * 发送邮件
+     * @param userEmailDto
+     * @return
+     */
+    @PostMapping("/send")
+    public BaseResponse<Boolean> sendMail(@RequestBody UserEmailDto userEmailDto) {
+        ThrowUtils.throwIf(userEmailDto == null, ErrorCode.PARAMS_ERROR,"邮箱号不能为空");
+        SecureRandom secureRandom = new SecureRandom();
+        String code = String.format("%06d", secureRandom.nextInt(999999));
+        String subject = "跃金图库-注册验证码";
+        String content = "你好！感谢你注册 跃金图库，你的验证码是: "+code+",5分钟后失效请尽快使用";
+        try {
+            mailConfig.sendSimpleMail(userEmailDto.getEmail(),subject,content);
+            String key = UserConstant.CODE + userEmailDto.getEmail();
+            redisTemplate.opsForValue().set(key,code,5, TimeUnit.MINUTES);
+            log.info(code);
+        }catch (Exception e){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"发送邮件失败");
+        }
+        return ResultUtils.success(true);
+    }
 
     /**
      * 用户注册
@@ -41,10 +76,11 @@ public class UserController {
         if (userRegisterDto == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        String userAccount = userRegisterDto.getUserAccount();
+        String email = userRegisterDto.getEmail();
         String userPassword = userRegisterDto.getUserPassword();
         String checkPassword = userRegisterDto.getCheckPassword();
-        long res = userService.userRegister(userAccount, userPassword, checkPassword);
+        String code = userRegisterDto.getCode();
+        long res = userService.userRegister(email, userPassword, checkPassword,code);
         return ResultUtils.success(res);
     }
 

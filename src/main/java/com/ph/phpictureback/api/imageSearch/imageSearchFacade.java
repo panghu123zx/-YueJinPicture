@@ -24,7 +24,6 @@ public class imageSearchFacade {
         return imageList;
     }
 
-
     public static void main(String[] args) {
         String url = "https://www.codefather.cn/logo.png";
         List<ImageSearchDto> imageSearchList = getImageSearchList(url);

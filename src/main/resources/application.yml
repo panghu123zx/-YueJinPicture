@@ -44,7 +44,21 @@ spring:
     port: 5672
     password: ${phoj.rabbitmq.password}
     username: ${phoj.rabbitmq.username}
-
+  mail:
+    port: 465 # QQ邮箱端口号
+    default-encoding: UTF-8 # 默认编码
+    host: smtp.qq.com # QQ邮箱的SMTP服务器地址
+    username: ${phoj.mail.username} # QQ邮箱账号
+    password: ${phoj.mail.password} # QQ邮箱授权码
+    properties:
+      mail:
+        smtp:
+          auth: true # 是否需要认证
+          ssl:
+            enable: true # 是否启用ssl
+            requried: true # 是否需要ssl
+            protocol: TLSv1.2 # 协议
+          debug: true # 是否开启调试模式
 
 mybatis-plus:
   configuration:

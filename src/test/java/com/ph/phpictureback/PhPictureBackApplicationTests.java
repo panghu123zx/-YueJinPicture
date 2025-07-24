@@ -1,15 +1,19 @@
 package com.ph.phpictureback;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.ph.phpictureback.api.MailConfig;
 import com.ph.phpictureback.constant.RedisCacheConstant;
+import com.ph.phpictureback.manager.ai.aiPicture.AiPicture;
 import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.service.PictureService;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.annotation.Resource;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,6 +26,15 @@ class PhPictureBackApplicationTests {
 
     @Resource
     private RedisTemplate redisTemplate;
+
+    @Resource
+    private AiPicture aiPicture;
+
+    @Resource
+    private MailConfig mailConfig;
+
+    @Value("${spring.mail.username}")
+    private String username;
 
     @Test
     void contextLoads() {
@@ -92,6 +105,23 @@ class PhPictureBackApplicationTests {
 
             System.out.println("图片浏览数更新失败"+e);
         }
+    }
+
+    @Test
+    void testCode(){
+        SecureRandom secureRandom = new SecureRandom();
+        String code = String.format("%06d", secureRandom.nextInt(999999));
+        String subject = "测试邮件";
+        String content = "你好！感谢你注册 跃金图库，你的验证码是: "+code;
+        mailConfig.sendSimpleMail(username,subject,content);
+    }
+
+    @Test
+    void testAi()  {
+        String content="画一个冰红茶科比，大瓶的冰红茶的瓶身上印有科比";
+        Long width=512L;
+        Long height=512L;
+        aiPicture.getAiPicture(content,width,height);
     }
 
 }

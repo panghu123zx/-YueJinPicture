@@ -40,9 +40,6 @@ public class AiConsumer {
     @Resource
     private AIManager aiManager;
 
-    @Resource
-    private UserService userService;
-
     /**
      * 调用ai处理消息
      * @param message
@@ -83,6 +80,7 @@ public class AiConsumer {
             channel.basicNack(deliveryTag,false,false);
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "消息保存失败");
         }
+        chatMessageService.updateChatCache(chatId,aiMessage);
         //重新广播消息
         Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 20L);
         ChatResponseMessage chatResponseMessage = new ChatResponseMessage();

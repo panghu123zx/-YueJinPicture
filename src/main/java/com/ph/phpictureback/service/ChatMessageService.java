@@ -32,4 +32,11 @@ public interface ChatMessageService extends IService<ChatMessage> {
      * @return
      */
     boolean backMessage(Long id, User loginUser);
+
+    /**
+     * 更新缓存
+     * @param id
+     * @param chatMessage
+     */
+    void updateChatCache(Long id,ChatMessage chatMessage);
 }

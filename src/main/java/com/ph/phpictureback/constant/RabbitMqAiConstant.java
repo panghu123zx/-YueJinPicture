@@ -15,6 +15,20 @@ public interface RabbitMqAiConstant {
     String AI_ROUTING="ai_routing";
 
     /**
+     * 图片ai交换机
+     */
+    String AI_PICTURE_EXCHANGE="ai_picture_exchange";
+    /**
+     * 图片ai队列
+     */
+    String AI_PICTURE_QUEUE="ai_picture_queue";
+    /**
+     * 图片ai路由
+     */
+    String AI_PICTURE_ROUTING="ai_picture_routing";
+
+
+    /**
      * 死信交换机
      */
     String DLX_EXCHANGE = "dead_exchange";
