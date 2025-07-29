@@ -159,6 +159,8 @@ public interface PictureService extends IService<Picture> {
      */
     void cosDeletePicture(Picture picture);
 
+    Page<PictureVO> getFollowPicture(PictureQueryDto pictureQueryDto,HttpServletRequest request);
+
     /**
      * 校验图片权限 （已使用so-token校验）
      * @param picture

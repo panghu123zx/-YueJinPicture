@@ -342,6 +342,35 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
         return follow;
     }
 
+    /**
+     * 获取关注/粉丝数
+     *
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public List<Long> getListFollow(User loginUser) {
+        Long id = loginUser.getId();
+        //查询我关注的
+        QueryWrapper<Follow> qwMyFollow = new QueryWrapper<>();
+        qwMyFollow.and(qw1 ->
+                qw1.eq("followState", 0)
+                        .eq("followerId", id)
+                        .or()
+                        .eq("isMutual", 1)
+                        .eq("userId", id));
+        return this.list(qwMyFollow)
+                .stream()
+                .map(follow -> {
+                    if(follow.getUserId().equals(id)){
+                        return follow.getFollowerId();
+                    }else{
+                        return follow.getUserId();
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
 }
 
 

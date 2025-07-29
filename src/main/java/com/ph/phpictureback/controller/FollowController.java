@@ -69,7 +69,7 @@ public class FollowController {
     }
 
     /**
-     * 获取关注数和粉丝数
+     * 获取登入用户的关注数和粉丝数
      * @param request
      * @return
      */
@@ -77,6 +77,20 @@ public class FollowController {
     public BaseResponse<Follow> getFollowCount(HttpServletRequest request){
         User loginUser = userService.getLoginUser(request);
         Follow followCount = followService.getFollowCount(loginUser);
+        return ResultUtils.success(followCount);
+    }
+
+
+    /**
+     * 获取用户关注数和粉丝数
+     * @param id
+     * @return
+     */
+    @GetMapping("/get/usercount")
+    public BaseResponse<Follow> getFollowCountByUser(long id){
+        User user = userService.getById(id);
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR,"用户不存在");
+        Follow followCount = followService.getFollowCount(user);
         return ResultUtils.success(followCount);
     }
 }

@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.vo.FollowVO;
 
+import java.util.List;
+
 /**
 * @author 杨志亮
 * @description 针对表【follow(关注表)】的数据库操作Service
@@ -48,4 +50,11 @@ public interface FollowService extends IService<Follow> {
      * @param loginUser
      */
     Follow getFollowCount(User loginUser);
+
+    /**
+     * 获取我关注的人的id
+     * @param loginUser
+     * @return
+     */
+    List<Long> getListFollow(User loginUser);
 }

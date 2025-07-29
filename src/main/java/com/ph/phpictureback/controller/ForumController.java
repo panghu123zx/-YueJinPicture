@@ -9,6 +9,7 @@ import com.ph.phpictureback.common.ResultUtils;
 import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
+import com.ph.phpictureback.model.dto.follow.FollowQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumAddDto;
 import com.ph.phpictureback.model.dto.forum.ForumQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumReviewDto;
@@ -20,6 +21,8 @@ import com.ph.phpictureback.model.dto.picture.PictureTagCategory;
 import com.ph.phpictureback.model.entry.Forum;
 import com.ph.phpictureback.model.entry.ForumFile;
 import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.enums.ReviewStatusEnum;
+import com.ph.phpictureback.model.vo.FollowVO;
 import com.ph.phpictureback.model.vo.ForumVO;
 import com.ph.phpictureback.service.ForumFileService;
 import com.ph.phpictureback.service.ForumService;
@@ -112,7 +115,9 @@ public class ForumController {
         if(pageSize> 50){
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "不允许查询过多数据");
         }
-        Page<Forum> page = forumService.page(new Page<>(current, pageSize), forumService.getQueryWrapper(forumQueryDto));
+        forumQueryDto.setReviewStatus(ReviewStatusEnum.PASS.getValue());
+        Page<Forum> page = forumService.page(new Page<>(current, pageSize)
+                , forumService.getQueryWrapper(forumQueryDto));
         Page<ForumVO> forumVOPage = forumService.listForumVO(page);
         return ResultUtils.success(forumVOPage);
     }
@@ -272,5 +277,20 @@ public class ForumController {
         List<String> categoryList = Arrays.asList("生活", "科幻", "技巧", "美食", "日常", "网络","体育","时尚","摄影","旅游");
         pictureTagCategory.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategory);
+    }
+
+    /**
+     * 查询我关注的帖子
+     * @param forumQueryDto
+     * @param request
+     * @return
+     */
+    @PostMapping("/follow/for")
+    public BaseResponse<Page<ForumVO>> getFollowFor(@RequestBody ForumQueryDto forumQueryDto
+            , HttpServletRequest request) {
+        ThrowUtils.throwIf(forumQueryDto == null, ErrorCode.PARAMS_ERROR, "参数错误");
+        User loginUser = userService.getLoginUser(request);
+        Page<ForumVO> page = forumService.getFollowFor( forumQueryDto,loginUser);
+        return ResultUtils.success(page);
     }
 }

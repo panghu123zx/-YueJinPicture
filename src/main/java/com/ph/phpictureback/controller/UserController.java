@@ -10,15 +10,20 @@ import com.ph.phpictureback.constant.UserConstant;
 import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
+import com.ph.phpictureback.manager.fileUpload.FilePictureUpload;
+import com.ph.phpictureback.model.dto.audioFile.AudioFileAddDto;
+import com.ph.phpictureback.model.dto.picture.UploadPictureDto;
 import com.ph.phpictureback.model.dto.user.*;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.vo.LoginUserVo;
 import com.ph.phpictureback.model.vo.UserVO;
+import com.ph.phpictureback.service.AudioFileService;
 import com.ph.phpictureback.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +47,9 @@ public class UserController {
     @Resource
     private RedisTemplate redisTemplate;
 
+    @Resource
+    private FilePictureUpload filePictureUpload;
+
     /**
      * 发送邮件
      * @param userEmailDto
@@ -53,7 +61,7 @@ public class UserController {
         SecureRandom secureRandom = new SecureRandom();
         String code = String.format("%06d", secureRandom.nextInt(999999));
         String subject = "跃金图库-注册验证码";
-        String content = "你好！感谢你注册 跃金图库，你的验证码是: "+code+",5分钟后失效请尽快使用";
+        String content = "你好！感谢你注册 跃金图库，你的验证码是: "+code+", 5分钟后失效请尽快使用";
         try {
             mailConfig.sendSimpleMail(userEmailDto.getEmail(),subject,content);
             String key = UserConstant.CODE + userEmailDto.getEmail();
@@ -63,6 +71,28 @@ public class UserController {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"发送邮件失败");
         }
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 上传头像
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    @PostMapping("/upload/avatar")
+    public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile multipartFile,HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        Long userId = loginUser.getId();
+        //上传路径
+        String uploadPath=String.format("avatar/%s",userId);
+        UploadPictureDto uploadPicture = filePictureUpload.uploadPicture(multipartFile, uploadPath);
+        String url = uploadPicture.getUrl();
+        boolean update = userService.lambdaUpdate()
+                .eq(User::getId, userId)
+                .set(User::getUserAvatar, url)
+                .update(null);
+        ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "头像上传失败");
+        return ResultUtils.success(url);
     }
 
     /**

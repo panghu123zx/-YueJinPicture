@@ -173,6 +173,7 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //获取到图片大小列表
         List<Long> pictureSize = pictureService.getBaseMapper().selectObjs(qw)
                 .stream()
+                .filter(ObjUtil::isNotNull)
                 .map(res -> ((Number) res).longValue())
                 .collect(Collectors.toList());
 

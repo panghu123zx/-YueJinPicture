@@ -128,6 +128,11 @@ public class PictureQueryDto extends PageRequest implements Serializable {
      */
     private String homeShow;
 
+    /**
+     * 是否为4K图片0-否，1-是，就是图片大小大于5M的
+     */
+    private Integer is4K=0;
+
 
 
     private static final long serialVersionUID = 1L;  

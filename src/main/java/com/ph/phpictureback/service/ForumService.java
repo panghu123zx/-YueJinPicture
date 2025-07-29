@@ -2,6 +2,7 @@ package com.ph.phpictureback.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ph.phpictureback.model.dto.follow.FollowQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumAddDto;
 import com.ph.phpictureback.model.dto.forum.ForumQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumReviewDto;
@@ -12,6 +13,7 @@ import com.ph.phpictureback.model.entry.Forum;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ph.phpictureback.model.entry.ForumFile;
 import com.ph.phpictureback.model.entry.User;
+import com.ph.phpictureback.model.vo.FollowVO;
 import com.ph.phpictureback.model.vo.ForumVO;
 import org.springframework.web.bind.annotation.RequestPart;
 
@@ -80,4 +82,12 @@ public interface ForumService extends IService<Forum> {
      * @return
      */
     List<ForumFile> queryForumFile(ForumFileQueryDto forumFileQueryDto);
+
+    /**
+     * 查询我关注的帖子
+     * @param forumQueryDto
+     * @param loginUser
+     * @return
+     */
+    Page<ForumVO> getFollowFor(ForumQueryDto forumQueryDto, User loginUser);
 }

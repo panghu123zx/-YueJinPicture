@@ -43,6 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private RedisTemplate redisTemplate;
+
     /**
      * 用户注册
      *
@@ -53,9 +54,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return
      */
     @Override
-    public long userRegister(String email, String userPassword, String checkPassword,String code) {
+    public long userRegister(String email, String userPassword, String checkPassword, String code) {
         //1.校验参数
-        if (StrUtil.hasBlank(email, userPassword, checkPassword,code)) {
+        if (StrUtil.hasBlank(email, userPassword, checkPassword, code)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (email.length() < 4) {
@@ -67,12 +68,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次参数不一致");
         }
-        if(code.length()!=6){
+        if (code.length() != 6) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码长度不正确");
         }
         //redis中获取验证码
         String emailCode = (String) redisTemplate.opsForValue().get(UserConstant.CODE + email);
-        if(StrUtil.isBlank(emailCode) ||!emailCode.equals(code)){
+        if (StrUtil.isBlank(emailCode) || !emailCode.equals(code)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
         }
         //2.检查是否重复
@@ -281,16 +282,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public boolean editUser(UserEditDto userEditDto) {
         Long id = userEditDto.getId();
         String userName = userEditDto.getUserName();
-        String userAvatar = userEditDto.getUserAvatar();
         String userProfile = userEditDto.getUserProfile();
         User user = this.getById(id);
         ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
-        User editUser = new User();
-        editUser.setId(id);
-        editUser.setUserName(userName);
-        editUser.setUserAvatar(userAvatar);
-        editUser.setUserProfile(userProfile);
-        boolean update = this.updateById(editUser);
+        boolean update = this.lambdaUpdate()
+                .eq(User::getId, id)
+                .set(User::getUserName, userName)
+                .set(User::getUserProfile, userProfile)
+                .update(null);
         ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR, "修改失败");
 
         return true;

@@ -318,7 +318,6 @@ create table audio_file
     title        varchar(128)                         null comment '标题',
     size         bigint                               null comment '大小',
     introduction varchar(128)                         null comment '简介',
-    md5          varchar(32)                          null comment '文件的md5',
     createTime   datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime   datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete     tinyint(1) default 0                 not null comment '是否删除'

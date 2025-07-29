@@ -1,5 +1,6 @@
 package com.ph.phpictureback.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
@@ -14,6 +15,7 @@ import com.ph.phpictureback.manager.fileUpload.FilePictureUpload;
 import com.ph.phpictureback.manager.fileUpload.UrlPictureUpload;
 import com.ph.phpictureback.manager.redisCache.ForumCache;
 import com.ph.phpictureback.mapper.ForumMapper;
+import com.ph.phpictureback.model.dto.follow.FollowQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumAddDto;
 import com.ph.phpictureback.model.dto.forum.ForumQueryDto;
 import com.ph.phpictureback.model.dto.forum.ForumReviewDto;
@@ -25,7 +27,9 @@ import com.ph.phpictureback.model.entry.Forum;
 import com.ph.phpictureback.model.entry.ForumFile;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.enums.ReviewStatusEnum;
+import com.ph.phpictureback.model.vo.FollowVO;
 import com.ph.phpictureback.model.vo.ForumVO;
+import com.ph.phpictureback.service.FollowService;
 import com.ph.phpictureback.service.ForumFileService;
 import com.ph.phpictureback.service.ForumService;
 import com.ph.phpictureback.service.UserService;
@@ -63,6 +67,9 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
 
     @Resource
     private TransactionTemplate transactionTemplate;
+
+    @Resource
+    private FollowService followService;
 
     /**
      * 添加帖子
@@ -350,6 +357,19 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
             return new ArrayList<>();
         }
         return list;
+    }
+
+    @Override
+    public Page<ForumVO> getFollowFor(ForumQueryDto forumQueryDto, User loginUser) {
+        List<Long> userIdList = followService.getListFollow(loginUser);
+        int current = forumQueryDto.getCurrent();
+        int pageSize = forumQueryDto.getPageSize();
+        if(CollUtil.isEmpty(userIdList)){
+            return new Page<>();
+        }
+        Page<Forum> page = this.page(new Page<>(current, pageSize),
+                this.getQueryWrapper(forumQueryDto).in("userId", userIdList));
+        return this.listForumVO(page);
     }
 
 

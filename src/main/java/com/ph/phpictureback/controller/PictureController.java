@@ -22,7 +22,6 @@ import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.manager.LimitManager;
-import com.ph.phpictureback.manager.ai.aiPicture.AiPicture;
 import com.ph.phpictureback.manager.ai.aiPicture.AiPictureProducer;
 import com.ph.phpictureback.manager.auth.StpKit;
 import com.ph.phpictureback.manager.auth.annotation.SaSpaceCheckPermission;
@@ -45,7 +44,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -225,7 +223,7 @@ public class PictureController {
         } else {
             boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
             ThrowUtils.throwIf(!hasPermission, ErrorCode.NO_AUTH_ERROR);
-//              查询个人图库 只查询自己的数据
+            //查询个人图库 只查询自己的数据
            /* Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.PARAMS_ERROR, "空间不存在");
             User loginUser = userService.getLoginUser(request);
@@ -538,4 +536,13 @@ public class PictureController {
         return ResultUtils.success(pageVoList);
     }
 
+    /**
+     * 获取我关注的用户图片
+     * @return
+     */
+    @PostMapping("/follow/pic")
+    public BaseResponse<Page<PictureVO>> getFollowPicture(@RequestBody PictureQueryDto pictureQueryDto,HttpServletRequest request){
+        Page<PictureVO> pageVO = pictureService.getFollowPicture(pictureQueryDto,request);
+        return ResultUtils.success(pageVO);
+    }
 }

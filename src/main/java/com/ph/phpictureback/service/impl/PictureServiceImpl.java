@@ -24,14 +24,17 @@ import com.ph.phpictureback.manager.fileUpload.FilePictureUpload;
 import com.ph.phpictureback.manager.fileUpload.UrlPictureUpload;
 import com.ph.phpictureback.manager.redisCache.PictureViewCache;
 import com.ph.phpictureback.mapper.PictureMapper;
+import com.ph.phpictureback.model.dto.follow.FollowQueryDto;
 import com.ph.phpictureback.model.dto.picture.*;
 import com.ph.phpictureback.model.entry.Picture;
 import com.ph.phpictureback.model.entry.Space;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.enums.ReviewStatusEnum;
 import com.ph.phpictureback.model.enums.SpaceTypeEnum;
+import com.ph.phpictureback.model.vo.FollowVO;
 import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.model.vo.UserVO;
+import com.ph.phpictureback.service.FollowService;
 import com.ph.phpictureback.service.PictureService;
 import com.ph.phpictureback.service.SpaceService;
 import com.ph.phpictureback.service.UserService;
@@ -72,6 +75,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private UserService userService;
+    @Resource
+    private FollowService followService;
 
     @Resource
     private FilePictureUpload filePictureUpload;
@@ -128,7 +133,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.PARAMS_ERROR, "空间不存在");
             //私有空间，空间的管理员才可以上传
-            if(space.getSpaceType().equals(SpaceTypeEnum.PRIVATE.getValue())){
+            if (space.getSpaceType().equals(SpaceTypeEnum.PRIVATE.getValue())) {
                 ThrowUtils.throwIf(!space.getUserId().equals(loginuser.getId()), ErrorCode.NO_AUTH_ERROR, "无权限");
             }
             //上传时，校验空间的大小和数量 是否达到上限
@@ -264,19 +269,19 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
 
             HashOperations ops = redisTemplate.opsForHash();
-            if(ops.hasKey(RedisCacheConstant.PICTURE_VIEW, pictureVO.getId())){
+            if (ops.hasKey(RedisCacheConstant.PICTURE_VIEW, pictureVO.getId())) {
                 Object viewSum = ops.get(RedisCacheConstant.PICTURE_VIEW, pictureVO.getId());
                 long viewCount = ((Number) viewSum).longValue();
                 pictureVO.setViewCount(pictureVO.getViewCount() + viewCount);
             }
 
-            if(ops.hasKey(RedisCacheConstant.PICTURE_LIKE, pictureVO.getId())){
+            if (ops.hasKey(RedisCacheConstant.PICTURE_LIKE, pictureVO.getId())) {
                 Object likeSum = ops.get(RedisCacheConstant.PICTURE_LIKE, pictureVO.getId());
                 long likeCount = ((Number) likeSum).longValue();
                 pictureVO.setLikeCount(pictureVO.getLikeCount() + likeCount);
             }
 
-            if(ops.hasKey(RedisCacheConstant.PICTURE_SHARE, pictureVO.getId())){
+            if (ops.hasKey(RedisCacheConstant.PICTURE_SHARE, pictureVO.getId())) {
                 Object shareSum = ops.get(RedisCacheConstant.PICTURE_SHARE, pictureVO.getId());
                 long shareCount = ((Number) shareSum).longValue();
                 pictureVO.setShareCount(pictureVO.getShareCount() + shareCount);
@@ -300,8 +305,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         Long id = pictureQueryDto.getId();
-        String name = pictureQueryDto.getName();
-        String introduction = pictureQueryDto.getIntroduction();
         String category = pictureQueryDto.getCategory();
         List<String> tags = pictureQueryDto.getTags();
         Long picSize = pictureQueryDto.getPicSize();
@@ -322,6 +325,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Date startEditTime = pictureQueryDto.getStartEditTime();
         Date endEditTime = pictureQueryDto.getEndEditTime();
         String homeShow = pictureQueryDto.getHomeShow();
+        //5242880
+        Integer is4K = pictureQueryDto.getIs4K();
 
         QueryWrapper<Picture> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
@@ -342,10 +347,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotNull(viewCount), "viewCount", viewCount);
         queryWrapper.eq(ObjUtil.isNotEmpty(spaceId), "spaceId", spaceId);
         queryWrapper.isNull(queryPublic, "spaceId");
-        queryWrapper.like(StrUtil.isNotBlank(name), "name", name);
-        queryWrapper.like(StrUtil.isNotBlank(introduction), "introduction", introduction);
         queryWrapper.like(StrUtil.isNotBlank(reviewMessage), "reviewMessage", reviewMessage);
-        queryWrapper.eq(ObjUtil.isNotNull(picSize), "picSize", picSize);
         queryWrapper.eq(ObjUtil.isNotNull(reviewStatus), "reviewStatus", reviewStatus);
         queryWrapper.eq(ObjUtil.isNotNull(reviewerId), "reviewerId", reviewerId);
         queryWrapper.eq(StrUtil.isNotBlank(picFormat), "picFormat", picFormat);
@@ -354,12 +356,19 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 queryWrapper.like("tags", "\"" + tag + "\"");
             }
         }
-        if(StrUtil.isEmpty(homeShow)){
-            queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
+        //选择4K图片
+        if (is4K==1){
+            queryWrapper.ge("picSize", 5242880);
         }else{
+            queryWrapper.eq(ObjUtil.isNotNull(picSize), "picSize", picSize);
+        }
+        //是否为首页的展示
+        if (StrUtil.isEmpty(homeShow)) {
+            queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
+        } else {
             queryWrapper.orderBy(StrUtil.isNotEmpty(homeShow), sortOrder.equals("ascend"), "viewCount");
             queryWrapper.orderBy(StrUtil.isNotEmpty(homeShow), sortOrder.equals("ascend"), "likeCount");
-            queryWrapper.orderBy(StrUtil.isNotEmpty(homeShow), sortOrder.equals("ascend"),"createTime");
+            queryWrapper.orderBy(StrUtil.isNotEmpty(homeShow), sortOrder.equals("ascend"), "createTime");
         }
         return queryWrapper;
     }
@@ -403,7 +412,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
         //更新空间大小
         transactionTemplate.execute(status -> {
-            if(picture.getSpaceId()!=null){
+            if (picture.getSpaceId() != null) {
                 boolean update = spaceService.lambdaUpdate()
                         .eq(Space::getId, picture.getSpaceId())
                         .setSql("totalSize = totalSize - " + picture.getPicSize())
@@ -424,6 +433,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     /**
      * 编辑图片
+     *
      * @param pictureEditDto
      * @param loginUser
      * @return
@@ -513,7 +523,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Integer reviewStatus = pictureReviewDto.getReviewStatus();
         ReviewStatusEnum reviewStatusValue = ReviewStatusEnum.getReviewStatusValue(reviewStatus);
         //图片为 待审核 时不可以审核
-        if (reviewStatusValue==null ||ReviewStatusEnum.REVIEWING.equals(reviewStatusValue)) {
+        if (reviewStatusValue == null || ReviewStatusEnum.REVIEWING.equals(reviewStatusValue)) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "待审核，不可重复审核");
         }
         Picture picture = this.getById(pictureReviewDto.getId());
@@ -623,9 +633,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             String dataM = element.attr("m");
             //获取到图片的地址
             String fileUrl;
-            try{
+            try {
                 fileUrl = JSONUtil.parseObj(dataM).getStr("murl");
-            }catch (Exception e){
+            } catch (Exception e) {
                 log.error("获取图片地址失败: {}", e);
                 continue;
             }
@@ -676,7 +686,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         //私有空间时，当前用户是否为空间的管理人
-        if(space.getSpaceType().equals(SpaceTypeEnum.PRIVATE.getValue())){
+        if (space.getSpaceType().equals(SpaceTypeEnum.PRIVATE.getValue())) {
             ThrowUtils.throwIf(!space.getUserId().equals(loginUser.getId()), ErrorCode.NO_AUTH_ERROR);
         }
 
@@ -724,7 +734,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         //私有空间时，当前用户是否为空间的管理人
-        if(space.getSpaceType().equals(SpaceTypeEnum.PRIVATE.getValue())){
+        if (space.getSpaceType().equals(SpaceTypeEnum.PRIVATE.getValue())) {
             ThrowUtils.throwIf(!space.getUserId().equals(loginUser.getId()), ErrorCode.NO_AUTH_ERROR);
         }
         List<Long> pictureIdList = pictureEditByBatchDto.getPictureIdList();
@@ -819,6 +829,44 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     }
 
+    /**
+     * 获取我关注的用户的图片
+     *
+     * @return
+     */
+    @Override
+    public Page<PictureVO> getFollowPicture(PictureQueryDto pictureQueryDto, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        List<Long> userIdList = followService.getListFollow(loginUser);
+        int current = pictureQueryDto.getCurrent();
+        int pageSize = pictureQueryDto.getPageSize();
+        Page<PictureVO> pageVO = new Page<>(current, pageSize);
+
+        if (CollUtil.isEmpty(userIdList)) {
+            return pageVO;
+        }
+        QueryWrapper<Picture> qw = new QueryWrapper<>();
+        String searchText = pictureQueryDto.getSearchText();
+        List<String> tags = pictureQueryDto.getTags();
+        qw.in("userId",userIdList);
+        if (StrUtil.isNotBlank(searchText)) {
+            qw.and(
+                    qw1-> qw1.like("name",searchText)
+                            .or()
+                            .like("introduction",searchText));
+        }
+        qw.eq("reviewStatus", ReviewStatusEnum.PASS.getValue());
+        String category = pictureQueryDto.getCategory();
+        qw.eq(StrUtil.isNotEmpty(category),"category", category);
+        qw.isNull("spaceId");
+        if (CollUtil.isNotEmpty(tags)) {
+            for (String tag : tags) {
+                qw.like("tags", "\"" + tag + "\"");
+            }
+        }
+        Page<Picture> page = this.page(new Page<>(current, pageSize),qw);
+        return this.listPictureVo(page, request);
+    }
 
     /**
      * 图片权限的检验,以替换为so-token统一校验

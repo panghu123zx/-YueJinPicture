@@ -49,10 +49,6 @@ public class AudioFile implements Serializable {
      */
     private String introduction;
 
-    /**
-     * 文件的md5
-     */
-    private String md5;
 
     /**
      * 创建时间
