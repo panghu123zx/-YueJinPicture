@@ -261,7 +261,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
             if (targetType.equals(ForumPictureTypeEnum.PICTURE.getValue())) {
                 commentVO.setPictureVO(pictureService.getPictureVo(targetId, loginUser));
             } else {
-                commentVO.setForumVO(forumService.getForumVO(targetId));
+                commentVO.setForumVO(forumService.getForumVO(targetId,loginUser));
             }
         });
         pageVO.setRecords(commentVOList);

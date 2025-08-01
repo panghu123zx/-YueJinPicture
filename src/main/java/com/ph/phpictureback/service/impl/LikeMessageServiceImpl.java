@@ -164,7 +164,7 @@ public class LikeMessageServiceImpl extends ServiceImpl<LikeMessageMapper, LikeM
                 PictureVO pictureVo = pictureService.getPictureVo(targetId, loginUser);
                 likeMessageVO.setPictureVO(pictureVo);
             } else {
-                ForumVO forumVO = forumService.getForumVO(targetId);
+                ForumVO forumVO = forumService.getForumVO(targetId,loginUser);
                 likeMessageVO.setForumVO(forumVO);
             }
         });

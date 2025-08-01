@@ -357,7 +357,7 @@ public class PictureController {
      * @param pictureEditDto
      * @return
      */
-    @PostMapping("/edit")
+        @PostMapping("/edit")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<Boolean> editPicture(@RequestBody PictureEditDto pictureEditDto, HttpServletRequest request) {
         ThrowUtils.throwIf(pictureEditDto == null, ErrorCode.PARAMS_ERROR);

@@ -57,7 +57,7 @@ public interface ForumService extends IService<Forum> {
      * @param id
      * @return
      */
-    ForumVO getForumVO(Long id);
+    ForumVO getForumVO(Long id, User loginUser);
 
     /**
      * 审核帖子

@@ -4,7 +4,9 @@ import cn.hutool.core.util.ObjectUtil;
 import com.ph.phpictureback.api.MailConfig;
 import com.ph.phpictureback.constant.RedisCacheConstant;
 import com.ph.phpictureback.manager.ai.aiPicture.AiPicture;
+import com.ph.phpictureback.model.entry.ChatMessage;
 import com.ph.phpictureback.model.entry.Picture;
+import com.ph.phpictureback.service.ChatMessageService;
 import com.ph.phpictureback.service.PictureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,9 @@ class PhPictureBackApplicationTests {
 
     @Resource
     private RedisTemplate redisTemplate;
+
+    @Resource
+    private ChatMessageService chatMessageService;
 
     @Resource
     private AiPicture aiPicture;
@@ -123,5 +128,6 @@ class PhPictureBackApplicationTests {
         Long height=512L;
         aiPicture.getAiPicture(content,width,height);
     }
+
 
 }

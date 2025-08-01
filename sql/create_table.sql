@@ -23,6 +23,11 @@ create table if not exists user
 alter table user
     add column email varchar(256) null comment '邮箱';
 
+#  创建ai小助手的用户
+insert into user (userAccount, userPassword, userName, userAvatar, userProfile, userRole)
+values ('ai',2713371044,'AI小助手','https://phpic-1347726265.cos.ap-shanghai.myqcloud.com/audio/1/2025-07-16_Tf3t1aUu.png',
+        '我是你的ai小助手','admin');
+
 -- 图片表
 create table if not exists picture
 (

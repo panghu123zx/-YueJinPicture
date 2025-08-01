@@ -255,7 +255,7 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
      * @return
      */
     @Override
-    public ForumVO getForumVO(Long id) {
+    public ForumVO getForumVO(Long id, User loginUser) {
         ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR, "参数错误");
         Forum forum = this.getById(id);
         ThrowUtils.throwIf(forum == null, ErrorCode.PARAMS_ERROR, "帖子不存在");
@@ -264,6 +264,13 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
         ForumVO forumVO = ForumVO.objToVo(forum);
         User user = userService.getById(forum.getUserId());
         forumVO.setUserVO(userService.getUserVo(user));
+        if(forum.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)){
+            forumVO.setCanDelete(true);
+            forumVO.setCanEdit(true);
+        }else{
+            forumVO.setCanDelete(false);
+            forumVO.setCanEdit(false);
+        }
         //得到帖子的文件
         ForumFileQueryDto query = new ForumFileQueryDto();
         query.setForumId(id);
@@ -367,8 +374,14 @@ public class ForumServiceImpl extends ServiceImpl<ForumMapper, Forum>
         if(CollUtil.isEmpty(userIdList)){
             return new Page<>();
         }
-        Page<Forum> page = this.page(new Page<>(current, pageSize),
-                this.getQueryWrapper(forumQueryDto).in("userId", userIdList));
+        String category = forumQueryDto.getCategory();
+        QueryWrapper<Forum> qw = new QueryWrapper<>();
+        qw.in("userId", userIdList);
+        qw.eq("reviewStatus", ReviewStatusEnum.PASS.getValue());
+        qw.eq(StringUtil.isNotBlank(category), "category", category);
+        String title = forumQueryDto.getTitle();
+        qw.like(StringUtil.isNotBlank(title), "title", title);
+        Page<Forum> page = this.page(new Page<>(current, pageSize),qw);
         return this.listForumVO(page);
     }
 

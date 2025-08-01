@@ -219,6 +219,9 @@ public class UserLikeController {
         qw.eq("likeShare", likeShare);
         qw.eq("targetType", forumPictureTypeValue.getValue());
         UserLike userLike = userLikeService.getOne(qw);
+        if(userLike == null){
+            return ResultUtils.success(new Page<>(current, pageSize));
+        }
         List<Long> picIdList = JSONUtil.toList(userLike.getLikePost(), Long.class);
         List<Forum> forumList = forumService.listByIds(picIdList);
         Page<Forum> page = new Page<>(current, pageSize, forumList.size());

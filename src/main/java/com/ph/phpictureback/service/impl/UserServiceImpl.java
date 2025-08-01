@@ -86,7 +86,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //4.添加数据
         String emailPrefix = email.split("@")[0];
         User user = new User();
-        user.setUserAccount(emailPrefix);
+        user.setUserAccount(email);
         user.setEmail(email);
         user.setUserPassword(encipherPassword);
         user.setUserName(emailPrefix);

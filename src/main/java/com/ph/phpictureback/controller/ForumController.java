@@ -141,9 +141,10 @@ public class ForumController {
      * @return
      */
     @GetMapping("/get/vo")
-    public BaseResponse<ForumVO> getForumVO(long id){
+    public BaseResponse<ForumVO> getForumVO(long id,HttpServletRequest request){
         ThrowUtils.throwIf(ObjectUtil.isEmpty(id), ErrorCode.PARAMS_ERROR, "参数错误");
-        ForumVO forum = forumService.getForumVO(id);
+        User loginUser = userService.getLoginUser(request);
+        ForumVO forum = forumService.getForumVO(id,loginUser);
         return ResultUtils.success(forum);
     }
 

@@ -90,6 +90,9 @@ public class ForumVO {
      */
     private List<ForumFile> forumFile;
 
+    private boolean canEdit;
+    private boolean canDelete;
+
     /**
      * 包装类转对象
      *

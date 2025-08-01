@@ -31,6 +31,7 @@ import com.ph.phpictureback.model.entry.Space;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.enums.ReviewStatusEnum;
 import com.ph.phpictureback.model.enums.SpaceTypeEnum;
+import com.ph.phpictureback.model.enums.SpaceUserEnum;
 import com.ph.phpictureback.model.vo.FollowVO;
 import com.ph.phpictureback.model.vo.PictureVO;
 import com.ph.phpictureback.model.vo.UserVO;
@@ -264,8 +265,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             if (userIdListMap.containsKey(userId)) {
                 //根据userId查询第一个的用户
                 user = userIdListMap.get(userId).get(0);
+                pictureVO.setUser(userService.getUserVo(user));
             }
-            pictureVO.setUser(userService.getUserVo(user));
 
 
             HashOperations ops = redisTemplate.opsForHash();

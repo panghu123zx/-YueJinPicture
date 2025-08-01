@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.ph.phpictureback.exception.BusinessException;
 import com.ph.phpictureback.exception.ErrorCode;
 import com.ph.phpictureback.exception.ThrowUtils;
 import com.ph.phpictureback.manager.ai.AiProducer;
@@ -102,9 +103,9 @@ public class ChatHandler extends TextWebSocketHandler {
         Integer messageType = requestMessage.getMessageType();
         String type = requestMessage.getType();
         //获取历史消息,不应该检查这些
-        if(!type.equals(ChatMessageTypeEnum.HISTORY.getValue()) && !type.equals(ChatMessageTypeEnum.MOREHISTORY.getValue())){
+        if (!type.equals(ChatMessageTypeEnum.HISTORY.getValue()) && !type.equals(ChatMessageTypeEnum.MOREHISTORY.getValue())) {
             //消息内容为空，并且消息类型为空时
-            if ( StrUtil.isBlank(content) && messageType==null) {
+            if (StrUtil.isBlank(content) && messageType == null) {
                 return;
             }
         }
@@ -142,6 +143,39 @@ public class ChatHandler extends TextWebSocketHandler {
 
         // 广播更新在线用户列表
         broadcastOnlineUsers(chatId);
+        //关闭连接之前，更新聊天室的消息
+        ChatPrompt chatPrompt = new ChatPrompt();
+        chatPrompt.setId(chatId);
+        ChatMessage one = chatMessageService.lambdaQuery()
+                .select(ChatMessage::getContent,ChatMessage::getCreateTime)
+                .eq(ChatMessage::getChatPromptId, chatId)
+                .orderByDesc(ChatMessage::getCreateTime)
+                .last("limit 1")
+                .one();
+        if(one==null){
+            return;
+        }
+        ChatPrompt chatPrompt1 = chatPromptService.lambdaQuery()
+                .select(ChatPrompt::getLastMessage, ChatPrompt::getLastMessageTime)
+                .eq(ChatPrompt::getId, chatId)
+                .one();
+        if(chatPrompt1==null){
+            return;
+        }
+        String content = one.getContent();
+        Date createTime = one.getCreateTime();
+        //内容为空时直接退出
+        if(StrUtil.isBlank(content)){
+           return;
+        }
+        //如果最后一条消息和当前消息相同，则不更新
+        if(content.equals(chatPrompt1.getLastMessage())){
+            return;
+        }
+        chatPrompt.setLastMessage(content);
+        chatPrompt.setLastMessageTime(createTime);
+        boolean update = chatPromptService.updateById(chatPrompt);
+        ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "更新最后一条消息失败");
     }
 
 
@@ -215,37 +249,30 @@ public class ChatHandler extends TextWebSocketHandler {
         Long receiverId = request.getReceiverId();
         chatMessage.setReceiveId(receiverId);
         chatMessage.setContent(request.getContent());
-        if(request.getMessageType()!=null){
+        if (request.getMessageType() != null) {
             chatMessage.setMessageType(request.getMessageType());
             chatMessage.setTargetId(request.getTargetId());
         }
         //设置会话ID
         String sessionId;
-        if(userId<receiverId){
-            sessionId=String.format("user%d_user%d", userId, receiverId);
-        }else{
-            sessionId=String.format("user%d_user%d", receiverId, userId);
+        if (userId < receiverId) {
+            sessionId = String.format("user%d_user%d", userId, receiverId);
+        } else {
+            sessionId = String.format("user%d_user%d", receiverId, userId);
         }
         chatMessage.setChatPromptId(chatId);
         chatMessage.setSessionId(sessionId);
         chatMessage.setCreateTime(new Date());
+        chatMessage.setIsRecalled(0);
         boolean save = chatMessageService.save(chatMessage);
-        ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR,"消息发送失败");
+        ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR, "消息发送失败");
         //更新缓存
-        chatMessageService.updateChatCache(chatId,chatMessage);
+        chatMessageService.updateChatCache(chatId, chatMessage);
 //        todo 数据库创建ai小助手为 1 号，如果receiveId为1时，就表示和ai聊天
-        if(receiverId==11){
+        if (receiverId == 11) {
             //创建消息队列的消息
             aiProducer.sendAiMessage(String.valueOf(chatMessage.getId()));
         }
-
-        //更新聊天室的信息
-        ChatPrompt chatPrompt = new ChatPrompt();
-        chatPrompt.setId(chatId);
-        chatPrompt.setLastMessage(request.getContent());
-        chatPrompt.setLastMessageTime(new Date());
-        boolean update = chatPromptService.updateById(chatPrompt);
-        ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR,"聊天室消息更新失败失败");
         //todo 未读消息数修改
         //发送历史消息
         Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 50L);
