@@ -23,11 +23,7 @@ public class ForumCache {
      */
     public void addForumLikeCache(Long forumId) {
         HashOperations<String, Long, Long> ops = redisTemplate.opsForHash();
-        if (!ops.hasKey(RedisCacheConstant.FORUM_LIKE, forumId)) {
-            ops.put(RedisCacheConstant.FORUM_LIKE, forumId, 1L);
-        } else {
-            ops.increment(RedisCacheConstant.FORUM_LIKE, forumId, 1L);
-        }
+        ops.increment(RedisCacheConstant.FORUM_LIKE, forumId, 1L);
     }
 
 
@@ -51,11 +47,8 @@ public class ForumCache {
      */
     public void addForumShareCache(Long forumId) {
         HashOperations<String, Long, Long> ops = redisTemplate.opsForHash();
-        if (!ops.hasKey(RedisCacheConstant.FORUM_SHARE, forumId)) {
-            ops.put(RedisCacheConstant.FORUM_SHARE, forumId, 1L);
-        } else {
-            ops.increment(RedisCacheConstant.FORUM_SHARE, forumId, 1L);
-        }
+        ops.increment(RedisCacheConstant.FORUM_SHARE, forumId, 1L);
+
     }
 
     /**
@@ -64,11 +57,8 @@ public class ForumCache {
      */
     public void addForumViewCache(Long forumId) {
         HashOperations<String, Long, Long> ops = redisTemplate.opsForHash();
-        if(!ops.hasKey(RedisCacheConstant.FORUM_VIEW,forumId)){
-            ops.put(RedisCacheConstant.FORUM_VIEW, forumId, 1L);
-        }else{
-            ops.increment(RedisCacheConstant.FORUM_VIEW, forumId, 1L);
-        }
+        ops.increment(RedisCacheConstant.FORUM_VIEW, forumId, 1L);
+
     }
     
     

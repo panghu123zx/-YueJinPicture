@@ -207,8 +207,9 @@ create index idx_userId on forum (userId);
 create table forum_file
 (
     id         bigint auto_increment comment 'id' primary key,
-    forumId    bigint                             not null comment '帖子 id',
+    forumId    bigint                             null comment '帖子 id',
     picUrl     varchar(512)                       null comment 'url',
+    thumbnailUrl varchar(512)                       null comment '封面缩略图',
     type       tinyint  default 0                 null comment '图片类型 0-封面，1-文件',
     size       bigint                             null comment '图片大小',
     position   int                                null comment '图片位置',
@@ -270,7 +271,7 @@ create table chat_message
     sendId       bigint                               not null comment '聊天发送者的id',
     receiveId    bigint                               not null comment '聊天接收者的id',
     content      text                                 null comment '消息内容',
-    messageType  tinyint    default '0'               null comment '消息类型 0-图片，1-文件',
+    messageType  tinyint                 null comment '消息类型 0-图片，1-文件',
     targetId     bigint                               null comment '目标的id',
     isRead       tinyint(1) default 0                 null comment '是否已读， 0-未读，1-已读',
     chatPromptId bigint                               not null comment '消息提示的id',

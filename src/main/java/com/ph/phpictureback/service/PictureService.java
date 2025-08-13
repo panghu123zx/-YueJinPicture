@@ -11,6 +11,7 @@ import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.vo.PictureVO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -160,6 +161,13 @@ public interface PictureService extends IService<Picture> {
     void cosDeletePicture(Picture picture);
 
     Page<PictureVO> getFollowPicture(PictureQueryDto pictureQueryDto,HttpServletRequest request);
+
+    /**
+     * 批量处理点赞信息
+     * @param map
+     * @return
+     */
+    boolean batchUpdatePictureLike(HashMap<Long, Long> map);
 
     /**
      * 校验图片权限 （已使用so-token校验）

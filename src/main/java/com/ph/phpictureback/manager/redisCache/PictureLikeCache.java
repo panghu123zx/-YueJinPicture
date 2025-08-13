@@ -25,11 +25,9 @@ public class PictureLikeCache {
      */
     public void addPictureLikeCache(Long pictureId) {
         HashOperations<String, Long, Long> ops = redisTemplate.opsForHash();
-        if (!ops.hasKey(RedisCacheConstant.PICTURE_LIKE, pictureId)) {
-            ops.put(RedisCacheConstant.PICTURE_LIKE, pictureId, 1L);
-        } else {
-            ops.increment(RedisCacheConstant.PICTURE_LIKE, pictureId, 1L);
-        }
+        //即使key不存在，会自动初始化
+        ops.increment(RedisCacheConstant.PICTURE_LIKE, pictureId, 1L);
+
     }
 
 

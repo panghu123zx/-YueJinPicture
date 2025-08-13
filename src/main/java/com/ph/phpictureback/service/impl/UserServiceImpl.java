@@ -14,15 +14,21 @@ import com.ph.phpictureback.mapper.UserMapper;
 import com.ph.phpictureback.model.dto.user.UserChangePwdDto;
 import com.ph.phpictureback.model.dto.user.UserEditDto;
 import com.ph.phpictureback.model.dto.user.UserQueryDto;
+import com.ph.phpictureback.model.entry.ChatPrompt;
+import com.ph.phpictureback.model.entry.Follow;
 import com.ph.phpictureback.model.entry.User;
 import com.ph.phpictureback.model.enums.UserRoleEnum;
 import com.ph.phpictureback.model.vo.LoginUserVo;
 import com.ph.phpictureback.model.vo.UserVO;
+import com.ph.phpictureback.service.ChatPromptService;
+import com.ph.phpictureback.service.FollowService;
 import com.ph.phpictureback.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
@@ -44,6 +50,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private RedisTemplate redisTemplate;
 
+    @Resource
+    @Lazy
+    private FollowService followService;
+
+    @Resource
+    @Lazy
+    private ChatPromptService chatPromptService;
+
     /**
      * 用户注册
      *
@@ -54,6 +68,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return
      */
     @Override
+    @Transactional
     public long userRegister(String email, String userPassword, String checkPassword, String code) {
         //1.校验参数
         if (StrUtil.hasBlank(email, userPassword, checkPassword, code)) {
@@ -93,7 +108,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserAvatar("https://img2.baidu.com/it/u=3887984625,2343006467&fm=253&fmt=auto&app=138&f=JPEG?w=199&h=199");
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean save = this.save(user);
+        //移除redis缓存的验证码
+        redisTemplate.delete(UserConstant.CODE + email);
         ThrowUtils.throwIf(!save, ErrorCode.SYSTEM_ERROR, "数据库异常");
+
+        //和ai小助手双向关注
+        Follow follow = new Follow();
+        follow.setFollowerId(user.getId());
+        follow.setUserId(1L);
+        follow.setIsMutual(1);
+        boolean save1 = followService.save(follow);
+        ThrowUtils.throwIf(!save1, ErrorCode.SYSTEM_ERROR, "添加关注失败");
+        //添加聊天室
+        ChatPrompt chatPrompt = new ChatPrompt();
+        chatPrompt.setUserId(user.getId());
+        chatPrompt.setTargetId(1L);
+        chatPrompt.setTitle("AI助手");
+        chatPrompt.setReceiveTitle("AI助手");
+        chatPrompt.setChatType(1);
+        boolean save2 = chatPromptService.save(chatPrompt);
+        ThrowUtils.throwIf(!save2, ErrorCode.SYSTEM_ERROR, "添加聊天室失败");
         return user.getId();
     }
 

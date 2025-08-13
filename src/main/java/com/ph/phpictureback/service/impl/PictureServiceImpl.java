@@ -106,6 +106,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Resource
     private RedisTemplate redisTemplate;
 
+    @Resource
+    private PictureMapper pictureMapper;
+
     /**
      * 上传图片
      *
@@ -867,6 +870,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
         Page<Picture> page = this.page(new Page<>(current, pageSize),qw);
         return this.listPictureVo(page, request);
+    }
+
+    @Override
+    public boolean batchUpdatePictureLike(HashMap<Long, Long> map) {
+        if(map.isEmpty()) return true;
+        return pictureMapper.updatePictureLike(map)> 0;
     }
 
     /**

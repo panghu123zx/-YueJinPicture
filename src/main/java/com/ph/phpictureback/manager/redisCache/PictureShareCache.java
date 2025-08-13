@@ -23,11 +23,8 @@ public class PictureShareCache {
      */
     public void addPictureShareCache(Long pictureId) {
         HashOperations<String, Long, Long> ops = redisTemplate.opsForHash();
-        if (!ops.hasKey(RedisCacheConstant.PICTURE_SHARE, pictureId)) {
-            ops.put(RedisCacheConstant.PICTURE_SHARE, pictureId, 1L);
-        } else {
-            ops.increment(RedisCacheConstant.PICTURE_SHARE, pictureId, 1L);
-        }
+        ops.increment(RedisCacheConstant.PICTURE_SHARE, pictureId, 1L);
+
     }
 
 

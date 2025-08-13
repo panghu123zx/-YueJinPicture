@@ -23,11 +23,8 @@ public class PictureViewCache {
      */
     public void addPictureViewCache(Long pictureId) {
         HashOperations<String, Long, Long> ops = redisTemplate.opsForHash();
-        if(!ops.hasKey(RedisCacheConstant.PICTURE_VIEW,pictureId)){
-            ops.put(RedisCacheConstant.PICTURE_VIEW, pictureId, 1L);
-        }else{
-            ops.increment(RedisCacheConstant.PICTURE_VIEW, pictureId, 1L);
-        }
+        ops.increment(RedisCacheConstant.PICTURE_VIEW, pictureId, 1L);
+
     }
 
 

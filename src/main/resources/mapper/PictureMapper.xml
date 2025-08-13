@@ -43,4 +43,18 @@
         isDelete,reviewStatus,reviewMessage,thumbnailUrl
         reviewerId,reviewTime
     </sql>
+    <update id="updatePictureLike">
+        update ph_picture.picture
+        set likeCount = CASE
+            <foreach collection="map.entrySet()" item="value" index="key" separator="">
+                WHEN id = #{key} THEN likeCount + #{value}
+            </foreach>
+            ELSE likeCount
+        END
+        where id in (
+        <foreach collection="map.entrySet()" item="value" index="key" separator=",">
+            #{key}
+        </foreach>
+        )
+    </update>
 </mapper>

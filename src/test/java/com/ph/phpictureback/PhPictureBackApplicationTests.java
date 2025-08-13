@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import java.security.SecureRandom;
@@ -127,6 +128,18 @@ class PhPictureBackApplicationTests {
         Long width=512L;
         Long height=512L;
         aiPicture.getAiPicture(content,width,height);
+    }
+
+    @Test
+    void testChat(){
+        final String SALT = "panghu";
+        String s = DigestUtils.md5DigestAsHex((SALT + "yzl123456789").getBytes());
+        System.out.println(s);
+
+        for(int i=0;i<SALT.length();i++){
+            char c=SALT.charAt(i);
+            StringBuilder stringBuilder = new StringBuilder();
+        }
     }
 
 

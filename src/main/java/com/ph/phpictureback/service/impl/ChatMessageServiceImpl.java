@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -143,7 +144,8 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
         pageVO.setRecords(chatMessageVOList);
         //写入redis和caffeine中
         int timeout = 5 + RandomUtil.randomInt(10);
-        String jsonStr = JSONUtil.toJsonStr(pageVO);
+        String jsonStr = JSONUtil.toJsonStr(pageVO, JSONConfig.create()
+                        .setDateFormat("yyyy-MM-dd HH:mm:ss"));
         redisVal.set(redisKey, jsonStr, timeout, TimeUnit.MINUTES);
         LOCAL_CACHE.put(redisKey, jsonStr);
 
@@ -207,7 +209,8 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
                 page.setTotal(page.getTotal() + 1);
 
                 //序列回redis中
-                String newPage = JSONUtil.toJsonStr(page);
+                String newPage = JSONUtil.toJsonStr(page, JSONConfig.create()
+                        .setDateFormat("yyyy-MM-dd HH:mm:ss"));
                 stringRedisTemplate.opsForValue().set(redisKey, newPage, 5 + RandomUtil.randomInt(5), TimeUnit.MINUTES);
                 LOCAL_CACHE.put(redisKey, newPage);
             }
@@ -255,7 +258,8 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
             });
             page.setRecords(records);
             //序列回redis中
-            String newPage = JSONUtil.toJsonStr(page);
+            String newPage = JSONUtil.toJsonStr(page, JSONConfig.create()
+                    .setDateFormat("yyyy-MM-dd HH:mm:ss"));
             stringRedisTemplate.opsForValue().set(redisKey, newPage, 5 + RandomUtil.randomInt(5), TimeUnit.MINUTES);
             LOCAL_CACHE.put(redisKey, newPage);
         }catch (Exception e){

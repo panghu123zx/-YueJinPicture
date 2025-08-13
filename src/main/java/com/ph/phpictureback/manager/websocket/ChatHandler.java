@@ -84,7 +84,7 @@ public class ChatHandler extends TextWebSocketHandler {
         // 1. 向新连接用户发送历史消息
         sendHistoryMessages(session, chatId);
 
-        // 3. 广播更新在线用户列表  todo
+        // 3. 广播更新在线用户列表
         broadcastOnlineUsers(chatId);
     }
 
@@ -249,8 +249,8 @@ public class ChatHandler extends TextWebSocketHandler {
         Long receiverId = request.getReceiverId();
         chatMessage.setReceiveId(receiverId);
         chatMessage.setContent(request.getContent());
+        chatMessage.setMessageType(request.getMessageType());
         if (request.getMessageType() != null) {
-            chatMessage.setMessageType(request.getMessageType());
             chatMessage.setTargetId(request.getTargetId());
         }
         //设置会话ID
@@ -269,11 +269,10 @@ public class ChatHandler extends TextWebSocketHandler {
         //更新缓存
         chatMessageService.updateChatCache(chatId, chatMessage);
 //        todo 数据库创建ai小助手为 1 号，如果receiveId为1时，就表示和ai聊天
-        if (receiverId == 11) {
+        if (receiverId == 1) {
             //创建消息队列的消息
             aiProducer.sendAiMessage(String.valueOf(chatMessage.getId()));
         }
-        //todo 未读消息数修改
         //发送历史消息
         Page<ChatMessageVO> historyMessages = chatMessageService.getHistoryMessages(chatId, 1L, 50L);
         ChatResponseMessage chatResponseMessage = new ChatResponseMessage();

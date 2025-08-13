@@ -1,6 +1,7 @@
 package com.ph.phpictureback.utils;
 
 import java.awt.*;
+import java.sql.Array;
 
 /**
  * 工具类：计算颜色相似度
